@@ -1,0 +1,55 @@
+{
+  "name": "@diogo/typescript-bootstrap",
+  "version": "1.0.0",
+  "description": "High-quality TypeScript project scaffolding with best practices for AI-assisted development",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "typescript-bootstrap": "./bin/cli.js"
+  },
+  "files": [
+    "dist",
+    "templates",
+    "bin"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Tests will be added\" && exit 0"
+  },
+  "keywords": [
+    "typescript",
+    "scaffolding",
+    "vite",
+    "vitest",
+    "eslint",
+    "template",
+    "boilerplate",
+    "ai-development",
+    "quality",
+    "testing"
+  ],
+  "author": "diogo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diogo/typescript-bootstrap.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vitest": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.5"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
