@@ -3,6 +3,9 @@
 node_modules/
 dist/
 
+# Secrets
+.npmrc
+
 # Editor
 .vscode/
 .idea/

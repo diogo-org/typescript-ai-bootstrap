@@ -120,8 +120,74 @@ try {
 }
 console.log('');
 
-// Step 4: TypeScript type check
-console.log('Step 4: TypeScript type checking...');
+// Step 4: Check for secrets
+console.log('Step 4: Checking for secrets...');
+try {
+  // Get list of staged files
+  const stagedFiles = execSync('git diff --cached --name-only', {
+    encoding: 'utf-8'
+  }).trim().split('\n').filter(f => f);
+
+  const secretPatterns = [
+    { regex: /_authToken=.+/i, description: 'Auth token' },
+    { regex: /password\s*=\s*['"][^'"]+['"]/i, description: 'Password' },
+    { regex: /api[_-]?key\s*[:=]\s*['"]?[a-zA-Z0-9]{20,}['"]?/i, description: 'API key' },
+    { regex: /secret[_-]?key\s*[:=]\s*['"]?[a-zA-Z0-9]{20,}['"]?/i, description: 'Secret key' },
+    { regex: /token\s*[:=]\s*['"]?[a-zA-Z0-9]{20,}['"]?/i, description: 'Token' },
+    { regex: /bearer\s+[a-zA-Z0-9\-._~+\/]+=*/i, description: 'Bearer token' },
+    { regex: /ghp_[a-zA-Z0-9]{36}/i, description: 'GitHub Personal Access Token' },
+    { regex: /gho_[a-zA-Z0-9]{36}/i, description: 'GitHub OAuth token' },
+    { regex: /github_pat_[a-zA-Z0-9]{22}_[a-zA-Z0-9]{59}/i, description: 'GitHub fine-grained PAT' },
+  ];
+
+  const secretsFound = [];
+
+  for (const file of stagedFiles) {
+    if (!fs.existsSync(file)) continue;
+    
+    const content = fs.readFileSync(file, 'utf-8');
+    const lines = content.split('\n');
+
+    secretPatterns.forEach(({ regex, description }) => {
+      lines.forEach((line, index) => {
+        if (regex.test(line) && !line.includes('${GITHUB_TOKEN}')) {
+          secretsFound.push({
+            file,
+            line: index + 1,
+            description,
+            preview: line.substring(0, 80).trim() + (line.length > 80 ? '...' : '')
+          });
+        }
+      });
+    });
+  }
+
+  if (secretsFound.length > 0) {
+    printStatus(false, `Found ${secretsFound.length} potential secret(s)`);
+    console.log('\nSecrets detected:');
+    secretsFound.forEach(({ file, line, description, preview }) => {
+      console.log(`  ${file}:${line} - ${description}`);
+      console.log(`    ${preview}`);
+    });
+    log(colors.yellow, '\n💡 Never commit secrets, tokens, or passwords');
+    log(colors.yellow, 'Use environment variables like ${GITHUB_TOKEN} instead');
+    log(colors.red, '\n❌ Commit aborted: Remove all secrets before committing');
+    process.exit(1);
+  }
+
+  printStatus(true, 'No secrets detected');
+} catch (error) {
+  if (error.code !== 1) {
+    // Don't fail on git diff errors (e.g., no staged files)
+    printStatus(true, 'No secrets detected (no staged files)');
+  } else {
+    throw error;
+  }
+}
+console.log('');
+
+// Step 5: TypeScript type check
+console.log('Step 5: TypeScript type checking...');
 try {
   execSync('npx tsc --noEmit', { 
     stdio: 'pipe',
@@ -136,8 +202,8 @@ try {
 }
 console.log('');
 
-// Step 5: Build check
-console.log('Step 5: Building project...');
+// Step 6: Build check
+console.log('Step 6: Building project...');
 try {
   execSync('npm run build', { 
     stdio: 'pipe',

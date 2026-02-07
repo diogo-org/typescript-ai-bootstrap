@@ -15,13 +15,14 @@ This is a reusable npm package that provides high-quality TypeScript project sca
 
 ### 1. Pre-commit Hooks (Most Important!)
 
-The `.husky/pre-commit.cjs` script is the heart of this template. It runs 5 checks:
+The `.husky/pre-commit.cjs` script is the heart of this template. It runs 6 checks:
 
 1. **ESLint** - Code style and quality
 2. **Tests with Coverage** - Must pass with ≥80% coverage
 3. **Code Duplication** - Maximum 1% duplication
-4. **TypeScript** - No type errors
-5. **Build** - Production build must succeed
+4. **Secrets Detection** - No API keys, tokens, or passwords
+5. **TypeScript** - No type errors
+6. **Build** - Production build must succeed
 
 **Never modify these thresholds without good reason.** They ensure quality.
 

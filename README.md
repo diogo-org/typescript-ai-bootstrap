@@ -78,8 +78,9 @@ Every commit is automatically validated with:
 1. **ESLint** - Code style and quality checks
 2. **Tests with Coverage** - All tests must pass with ≥80% coverage
 3. **Code Duplication** - Maximum 1% duplication allowed
-4. **TypeScript** - No type errors allowed
-5. **Build** - Production build must succeed
+4. **Secrets Detection** - No API keys, tokens, or passwords allowed
+5. **TypeScript** - No type errors allowed
+6. **Build** - Production build must succeed
 
 If any check fails, the commit is blocked with clear error messages.
 
@@ -130,6 +131,8 @@ This package is designed to be published to GitHub Packages.
 @diogo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
+
+**Note**: This file contains secrets and should never be committed. It's already in `.gitignore`. Use environment variables like `${GITHUB_TOKEN}` for credentials.
 
 2. Authenticate with GitHub:
 
