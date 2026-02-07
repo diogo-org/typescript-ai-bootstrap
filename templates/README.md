@@ -34,7 +34,3 @@ This project enforces high-quality standards:
 - No magic numbers
 - Strict TypeScript
 - ESLint for code consistency
-
-## License
-
-MIT

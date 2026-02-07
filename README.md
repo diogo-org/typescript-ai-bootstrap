@@ -10,7 +10,8 @@
 - 🔍 **ESLint** - Strict linting rules for quality code
 - 🧪 **Testing Library** - React component testing utilities
 - 🎨 **React** - Modern React 18 with TypeScript
-- 📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
+- � **Pre-commit Hooks** - Automated quality checks before every commit
+- �📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
 
 ## Philosophy
 
@@ -20,6 +21,7 @@ This scaffolding enforces high-quality code standards ideal for AI-assisted deve
 - **Strict TypeScript**: Full type safety with strict compiler options
 - **High Test Coverage**: 80% minimum coverage for lines, functions, branches, and statements
 - **Consistent Code Style**: ESLint enforces consistent patterns
+- **Pre-commit Quality Gates**: Automated checks prevent bad commits
 - **AI-Friendly Structure**: Clear separation of concerns and predictable patterns
 
 ## Installation
@@ -68,6 +70,18 @@ my-project/
 ```
 
 ## Code Quality Standards
+
+### Pre-commit Hooks
+
+Every commit is automatically validated with:
+
+1. **ESLint** - Code style and quality checks
+2. **Tests with Coverage** - All tests must pass with ≥80% coverage
+3. **Code Duplication** - Maximum 1% duplication allowed
+4. **TypeScript** - No type errors allowed
+5. **Build** - Production build must succeed
+
+If any check fails, the commit is blocked with clear error messages.
 
 ### No Magic Numbers
 
@@ -162,6 +176,10 @@ This package was extracted from the `easy-logic` project to provide reusable sca
 - Node.js >= 18.0.0
 - npm >= 9.0.0
 
-## License
+## Author
 
-MIT
+Created by diogo with 100% copilot code
+
+## Repository
+
+https://github.com/diogo/typescript-bootstrap
