@@ -27,7 +27,7 @@ This scaffolding enforces high-quality code standards ideal for AI-assisted deve
 ## Installation
 
 ```bash
-npm install -g @diogo/typescript-bootstrap
+npm install -g @diogo-raphael-cravo/typescript-bootstrap
 ```
 
 ## Usage
@@ -128,7 +128,7 @@ This package is designed to be published to GitHub Packages.
 1. Create a `.npmrc` file in your project root:
 
 ```
-@diogo:registry=https://npm.pkg.github.com
+@diogo-raphael-cravo:registry=https://npm.pkg.github.com
 //npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
@@ -152,13 +152,13 @@ npm publish
 Add to your `.npmrc`:
 
 ```
-@diogo:registry=https://npm.pkg.github.com
+@diogo-raphael-cravo:registry=https://npm.pkg.github.com
 ```
 
 Then install:
 
 ```bash
-npm install @diogo/typescript-bootstrap
+npm install @diogo-raphael-cravo/typescript-bootstrap
 ```
 
 ## Customization
