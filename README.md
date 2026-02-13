@@ -1,5 +1,7 @@
 # TypeScript Bootstrap
 
+Authored by Copilot, guided by Diogo.
+
 > High-quality TypeScript project scaffolding optimized for AI-assisted development
 
 ## Features
@@ -8,10 +10,9 @@
 - 🎯 **TypeScript** - Strict type checking with best practices
 - ✅ **Vitest** - Fast unit testing with 80% coverage requirements
 - 🔍 **ESLint** - Strict linting rules for quality code
-- 🧪 **Testing Library** - React component testing utilities
-- 🎨 **React** - Modern React 18 with TypeScript
-- � **Pre-commit Hooks** - Automated quality checks before every commit
-- �📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
+- 🎨 **Two Templates** - React web apps or vanilla TypeScript projects
+- 🪝 **Pre-commit Hooks** - Automated quality checks before every commit
+- 📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
 
 ## Philosophy
 
@@ -32,8 +33,25 @@ npm install -g @diogo-raphael-cravo/typescript-bootstrap
 
 ## Usage
 
+### Choose Your Template
+
+TypeScript Bootstrap offers two project templates:
+
+**React Template (default)**
+- Modern React 18 with TypeScript
+- React Testing Library for component testing
+- Vite dev server with HMR
+- Perfect for web applications and SPAs
+
+**TypeScript Template**
+- Vanilla TypeScript for Node.js applications
+- tsx for fast development with watch mode
+- No React dependencies
+- Perfect for CLIs, libraries, backend services, or scripts
+
 ### Initialize a New Project
 
+**React project (default):**
 ```bash
 mkdir my-project
 cd my-project
@@ -41,11 +59,57 @@ typescript-bootstrap
 npm install
 ```
 
+**TypeScript project:**
+```bash
+mkdir my-project
+cd my-project
+typescript-bootstrap --template typescript
+npm install
+```
+
+### Update an Existing Project
+
+When a new version of `typescript-bootstrap` is released, you can update your existing project to get the latest configuration files and tooling:
+
+```bash
+cd my-project
+
+# Check for updates
+npm outdated @diogo-raphael-cravo/typescript-bootstrap
+
+# Update to latest version
+npm install @diogo-raphael-cravo/typescript-bootstrap@latest
+
+# Apply template updates
+typescript-bootstrap update
+
+# Install any new dependencies
+npm install
+```
+
+The update command will:
+- ✅ Update configuration files (tsconfig, vite.config, vitest.config, eslint.config, etc.) to match the template (your local changes to these files will be overwritten)
+- ✅ Merge package.json scripts and dependencies by applying the latest template values and adding any extra custom scripts/dependencies you've defined (note: changes to template-provided entries will be overwritten)
+- ✅ Update .gitignore with latest patterns
+- ✅ Preserve your source code in `src/` directory
+- ✅ Preserve additional custom dependencies, scripts, and settings that are not part of the template while resetting template-provided configuration to the latest version
+
 ### Available Scripts
 
-- `npm run dev` - Start development server with HMR
+**React template:**
+- `npm run dev` - Start Vite development server with HMR
 - `npm run build` - Build for production (TypeScript check + Vite build)
-- `npm run preview` - Preview production build locally
+- `npm run preview` - Preview production build in browser
+- `npm test` - Run all tests once
+- `npm run test:ui` - Run tests with interactive UI
+- `npm run test:coverage` - Generate coverage report (requires 80% minimum)
+- `npm run lint` - Check code for linting issues
+- `npm run lint:fix` - Auto-fix linting issues
+
+**TypeScript template:**
+- `npm run dev` - Run with tsx watch mode (auto-reloads on changes)
+- `npm run build` - Build for production (TypeScript compilation + Vite bundling)
+- `npm run preview` - Run the built application
 - `npm test` - Run all tests once
 - `npm run test:ui` - Run tests with interactive UI
 - `npm run test:coverage` - Generate coverage report (requires 80% minimum)
@@ -54,6 +118,7 @@ npm install
 
 ## Project Structure
 
+**React template:**
 ```
 my-project/
 ├── src/
@@ -61,6 +126,21 @@ my-project/
 │   ├── test.setup.ts     # Test environment setup
 │   └── vite-env.d.ts     # Vite type declarations
 ├── index.html            # HTML entry point
+├── package.json          # Dependencies and scripts
+├── tsconfig.json         # TypeScript config for app
+├── tsconfig.node.json    # TypeScript config for build tools
+├── vite.config.ts        # Vite configuration
+├── vitest.config.ts      # Vitest test configuration
+└── eslint.config.js      # ESLint rules
+```
+
+**TypeScript template:**
+```
+my-project/
+├── src/
+│   ├── main.ts           # Application entry point
+│   ├── test.setup.ts     # Test environment setup
+│   └── vite-env.d.ts     # Vite type declarations
 ├── package.json          # Dependencies and scripts
 ├── tsconfig.json         # TypeScript config for app
 ├── tsconfig.node.json    # TypeScript config for build tools
@@ -121,30 +201,70 @@ The configuration enables all strict TypeScript checks:
 
 ## Publishing to GitHub Packages
 
-This package is designed to be published to GitHub Packages.
+This package publishes from `main` using the version already present in `package.json`. When you push to the `main` branch, GitHub Actions reads `package.json`, builds, tags, and publishes.
 
-### Setup
+### Automatic Publishing Workflow
 
-1. Create a `.npmrc` file in your project root:
+1. **Make your changes** and commit:
+   ```bash
+   git add .
+   git commit -m "feat: add new template file"
+   ```
+
+2. **Update the version in `package.json`** (commit the change):
+   ```bash
+   npm version minor  # or patch, or major
+   git push --follow-tags
+   ```
+
+3. **Push to main branch**:
+   ```bash
+   git push origin main
+   ```
+
+4. **GitHub Actions automatically**:
+   - Reads the version from `package.json`
+   - Builds the package
+   - Creates a git tag (e.g., `1.1.0`)
+   - Publishes to GitHub Packages
+   - Pushes the tag back to the repository
+
+**Note:** The workflow fails if a tag matching the `package.json` version already exists or if a prerelease version is on `main`.
+
+### Manual Publishing (Alternative)
+
+If you prefer manual control:
+
+```bash
+# 1. Commit your changes
+git add .
+git commit -m "feat: add new feature"
+
+# 2. Manually bump version without creating a v-prefixed tag
+npm version minor --no-git-tag-version  # or patch, or major
+
+# 3. Build and publish
+npm run build
+npm publish
+
+# 4. Create and push a release tag that matches package.json
+VERSION=$(node -p "require('./package.json').version")
+git tag "$VERSION" -m "Release $VERSION"
+git push && git push --tags
+```
+
+### Setup for Installation
+
+To install this package in other projects, create a `.npmrc` file:
 
 ```
 @diogo-raphael-cravo:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-**Note**: This file contains secrets and should never be committed. It's already in `.gitignore`. Use environment variables like `${GITHUB_TOKEN}` for credentials.
-
-2. Authenticate with GitHub:
+Authenticate with GitHub:
 
 ```bash
 npm login --registry=https://npm.pkg.github.com
-```
-
-3. Publish:
-
-```bash
-npm run build
-npm publish
 ```
 
 ### Using in Other Projects

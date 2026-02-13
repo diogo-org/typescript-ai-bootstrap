@@ -1,16 +1,24 @@
 name: Publish Package
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build"]
+    types:
+      - completed
     branches:
       - main
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: read
+      actions: read
       packages: write
+    env:
+      ARTIFACT_POLLING_MAX_ATTEMPTS: 30  # 5 minutes total wait time (30 attempts × 10 seconds)
+      ARTIFACT_POLLING_INTERVAL_SECONDS: 10
     steps:
       - uses: actions/checkout@v4
       
@@ -21,13 +29,96 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@diogo-raphael-cravo'
       
-      - name: Install dependencies
-        run: npm ci
+      - name: Wait for artifact availability
+        id: wait-artifact
+        run: |
+          echo "Checking artifact availability for workflow run ${{ github.event.workflow_run.id }}..."
+          
+          ATTEMPT=0
+          ARTIFACT_FOUND=false
+          
+          while [ $ATTEMPT -lt $ARTIFACT_POLLING_MAX_ATTEMPTS ]; do
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$ARTIFACT_POLLING_MAX_ATTEMPTS: Checking for 'dist' artifact..."
+            
+            # Query GitHub API for artifacts
+            RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts")
+            
+            # Check if 'dist' artifact exists in the artifacts array
+            DIST_ARTIFACT=$(echo "$RESPONSE" | jq -r '.artifacts[] | select(.name == "dist") | .name')
+            
+            if [ "$DIST_ARTIFACT" = "dist" ]; then
+              echo "✓ Artifact 'dist' found and ready for download"
+              ARTIFACT_FOUND=true
+              break
+            fi
+            
+            echo "Artifact not yet available, waiting $ARTIFACT_POLLING_INTERVAL_SECONDS seconds..."
+            sleep $ARTIFACT_POLLING_INTERVAL_SECONDS
+          done
+          
+          if [ "$ARTIFACT_FOUND" = false ]; then
+            echo "::error::Artifact 'dist' not found after $ARTIFACT_POLLING_MAX_ATTEMPTS attempts"
+            exit 1
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Build package
-        run: npm run build
+      - name: Download build artifacts
+        id: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
+        continue-on-error: true
+      
+      - name: Verify artifact download
+        if: steps.download-artifact.outcome == 'failure'
+        run: |
+          echo "::error::Failed to download build artifacts from workflow run ${{ github.event.workflow_run.id }}"
+          exit 1
+      
+      - name: Verify artifact integrity
+        run: |
+          echo "Verifying artifact integrity..."
+          
+          if [ ! -d "dist" ]; then
+            echo "::error::dist/ directory does not exist after artifact download"
+            exit 1
+          fi
+          
+          if [ ! -f "dist-checksums.txt" ]; then
+            echo "::error::Checksum file not found - artifact integrity cannot be verified"
+            exit 1
+          fi
+          
+          FILE_COUNT=$(find dist -type f | wc -l)
+          
+          if [ "$FILE_COUNT" -eq 0 ]; then
+            echo "::error::dist/ directory is empty - no files to publish"
+            exit 1
+          fi
+          
+          echo "✓ Found $FILE_COUNT file(s) in dist/ directory"
+          
+          # Verify checksums
+          echo "Verifying SHA256 checksums..."
+          cd dist
+          if sha256sum -c ../dist-checksums.txt; then
+            echo "✓ All checksums verified successfully"
+          else
+            echo "::error::Checksum verification failed - artifact may have been tampered with"
+            exit 1
+          fi
+          cd ..
+          
+          echo "Contents:"
+          ls -lah dist/
       
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
