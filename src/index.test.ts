@@ -104,6 +104,18 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         const filePath = path.join(huskyDir, file);
         expect(fs.existsSync(filePath), `${file} should exist in .husky`).toBe(true);
       }
+
+      // Check that scripts directory and files are copied
+      const scriptsDir = path.join(testDir, 'scripts');
+      expect(fs.existsSync(scriptsDir), 'scripts directory should exist').toBe(true);
+      
+      const preparePath = path.join(scriptsDir, 'prepare.cjs');
+      expect(fs.existsSync(preparePath), 'prepare.cjs should exist in scripts').toBe(true);
+
+      // Check that package.json has the correct prepare script
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(packageJson.scripts.prepare).toBe('node scripts/prepare.cjs');
     });
 
     it('should copy eslint.config.js during initialization', async () => {
@@ -727,6 +739,33 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Verify content is from main project
       const preCommitContent = fs.readFileSync(path.join(huskyDir, 'pre-commit.cjs'), 'utf-8');
       expect(preCommitContent).toContain('pre-commit');
+    });
+
+    it('should copy scripts directory during update', async () => {
+      // Create a project
+      await init({
+        projectName: 'scripts-update-test',
+        targetDir: testDir,
+      });
+
+      // Delete scripts to simulate old project
+      const scriptsDir = path.join(testDir, 'scripts');
+      if (fs.existsSync(scriptsDir)) {
+        fs.rmSync(scriptsDir, { recursive: true });
+      }
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Verify scripts directory is copied
+      expect(fs.existsSync(scriptsDir)).toBe(true);
+      expect(fs.existsSync(path.join(scriptsDir, 'prepare.cjs'))).toBe(true);
+      expect(fs.existsSync(path.join(scriptsDir, 'prepare.test.ts'))).toBe(true);
+
+      // Verify content is from main project
+      const prepareContent = fs.readFileSync(path.join(scriptsDir, 'prepare.cjs'), 'utf-8');
+      expect(prepareContent).toContain('prepareHusky');
+      expect(prepareContent).toContain('npx --no-install husky install');
     });
 
     it('should copy eslint.config.js during update', async () => {

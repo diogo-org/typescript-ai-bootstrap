@@ -219,6 +219,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
     // Copy .husky directory from the main project
     copyDirectory('.husky', targetDir, logCreated);
 
+    // Copy scripts directory from the main project
+    copyDirectory('scripts', targetDir, logCreated);
+
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, logCreated);
 
@@ -435,6 +438,9 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
     // Copy .husky directory from the main project
     copyDirectory('.husky', targetDir, trackUpdated);
+
+    // Copy scripts directory from the main project
+    copyDirectory('scripts', targetDir, trackUpdated);
 
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, trackUpdated);

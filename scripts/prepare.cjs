@@ -6,30 +6,60 @@
  */
 
 const { execSync } = require('child_process');
-const { existsSync } = require('fs');
-const { resolve } = require('path');
 
-// Check if we're in a CI environment
-// Only treat 'true' or '1' as truthy to avoid false positives from CI=false or CI=0
-const isCI = process.env.CI === 'true' || process.env.CI === '1';
+/**
+ * Core logic for husky installation with dependency injection for testability
+ * @param {object} deps - Dependencies to inject
+ * @param {Function} deps.execSync - Function to execute commands
+ * @param {Function} deps.requireResolve - Function to resolve module paths (require.resolve)
+ * @param {Function} deps.log - Function for logging
+ * @param {Function} deps.error - Function for error logging
+ * @param {object} deps.env - Environment variables
+ * @returns {number} Exit code (0 = success, 1 = failure)
+ */
+function prepareHusky(deps = {}) {
+  const {
+    execSync: exec = execSync,
+    requireResolve = require.resolve,
+    log = console.log,
+    error = console.error,
+    env = process.env
+  } = deps;
 
-if (isCI) {
-  console.log('CI environment detected, skipping husky install');
-  process.exit(0);
+  // Check if we're in a CI environment
+  // Only treat 'true' or '1' as truthy to avoid false positives from CI=false or CI=0
+  const isCI = env.CI === 'true' || env.CI === '1';
+
+  if (isCI) {
+    log('CI environment detected, skipping husky install');
+    return 0;
+  }
+
+  // Check if husky is available using Node's module resolution
+  // This is more robust than checking node_modules/husky directly
+  try {
+    requireResolve('husky');
+  } catch (err) {
+    log('Husky not installed (devDependencies may be omitted), skipping husky install');
+    return 0;
+  }
+
+  try {
+    log('Installing husky hooks...');
+    // Use --no-install to prevent npx from downloading packages if not found locally
+    exec('npx --no-install husky install', { stdio: 'inherit' });
+    log('Husky hooks installed successfully');
+    return 0;
+  } catch (err) {
+    error('Failed to install husky hooks:', err.message);
+    return 1;
+  }
 }
 
-// Check if husky is available (installed in node_modules)
-const huskyPath = resolve(process.cwd(), 'node_modules', 'husky');
-if (!existsSync(huskyPath)) {
-  console.log('Husky not installed (devDependencies may be omitted), skipping husky install');
-  process.exit(0);
+// Only execute when run directly (not when required/imported)
+if (require.main === module) {
+  const exitCode = prepareHusky();
+  process.exit(exitCode);
 }
 
-try {
-  console.log('Installing husky hooks...');
-  execSync('npx husky install', { stdio: 'inherit' });
-  console.log('Husky hooks installed successfully');
-} catch (error) {
-  console.error('Failed to install husky hooks:', error.message);
-  process.exit(1);
-}
+module.exports = { prepareHusky };

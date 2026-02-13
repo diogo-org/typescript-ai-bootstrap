@@ -16,7 +16,7 @@
     "test:coverage": "vitest --run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "prepare": "husky install",
+    "prepare": "node scripts/prepare.cjs",
     "version:patch": "npm version patch --no-git-tag-version",
     "version:minor": "npm version minor --no-git-tag-version",
     "version:major": "npm version major --no-git-tag-version"
