@@ -6,20 +6,28 @@
  */
 
 const { execSync } = require('child_process');
+const { existsSync } = require('fs');
+const { resolve } = require('path');
 
 // Check if we're in a CI environment
-const isCI = process.env.CI === 'true' || 
-             process.env.CI === '1' || 
-             Boolean(process.env.CI);
+// Only treat 'true' or '1' as truthy to avoid false positives from CI=false or CI=0
+const isCI = process.env.CI === 'true' || process.env.CI === '1';
 
 if (isCI) {
   console.log('CI environment detected, skipping husky install');
   process.exit(0);
 }
 
+// Check if husky is available (installed in node_modules)
+const huskyPath = resolve(process.cwd(), 'node_modules', 'husky');
+if (!existsSync(huskyPath)) {
+  console.log('Husky not installed (devDependencies may be omitted), skipping husky install');
+  process.exit(0);
+}
+
 try {
   console.log('Installing husky hooks...');
-  execSync('husky install', { stdio: 'inherit' });
+  execSync('npx husky install', { stdio: 'inherit' });
   console.log('Husky hooks installed successfully');
 } catch (error) {
   console.error('Failed to install husky hooks:', error.message);
