@@ -1,5 +1,7 @@
 # TypeScript Bootstrap
 
+Authored by Copilot, guided by Diogo.
+
 > High-quality TypeScript project scaffolding optimized for AI-assisted development
 
 ## Features
@@ -148,49 +150,35 @@ The configuration enables all strict TypeScript checks:
 
 ## Publishing to GitHub Packages
 
-This package uses **automatic versioning** based on version markers in commit messages. When you push to the `main` branch, GitHub Actions automatically bumps the version, builds, and publishes.
-
-### Version Markers
-
-Include `[patch]`, `[minor]`, or `[major]` in your commit message to specify the version bump:
-
-```bash
-# Patch release (1.0.0 → 1.0.1) - Bug fixes, docs, chores
-git commit -m "fix: correct template file path [patch]"
-git commit -m "docs: update README examples [patch]"
-git commit -m "chore: update dependencies [patch]"
-
-# Minor release (1.0.0 → 1.1.0) - New features
-git commit -m "feat: add update command for existing projects [minor]"
-git commit -m "Add CLI support for multiple commands [minor]"
-
-# Major release (1.0.0 → 2.0.0) - Breaking changes
-git commit -m "Breaking: change template directory structure [major]"
-git commit -m "Remove deprecated configuration options [major]"
-```
+This package publishes from `main` using the version already present in `package.json`. When you push to the `main` branch, GitHub Actions reads `package.json`, builds, tags, and publishes.
 
 ### Automatic Publishing Workflow
 
-1. **Make your changes** and commit with version marker:
+1. **Make your changes** and commit:
    ```bash
    git add .
-   git commit -m "feat: add new template file [minor]"
+   git commit -m "feat: add new template file"
    ```
 
-2. **Push to main branch**:
+2. **Update the version in `package.json`** (commit the change):
+   ```bash
+   npm version minor  # or patch, or major
+   git push --follow-tags
+   ```
+
+3. **Push to main branch**:
    ```bash
    git push origin main
    ```
 
-3. **GitHub Actions automatically**:
-   - Detects version bump type from `[patch]`, `[minor]`, or `[major]` marker
-   - Bumps version in `package.json`
+4. **GitHub Actions automatically**:
+   - Reads the version from `package.json`
    - Builds the package
-   - Creates a git tag (e.g., `v1.1.0`)
+   - Creates a git tag (e.g., `1.1.0`)
    - Publishes to GitHub Packages
-   - Pushes version commit and tag back to repository
+   - Pushes the tag back to the repository
 
-**Note:** If no version marker is found, the build will fail. Always include `[patch]`, `[minor]`, or `[major]` in commits to main.
+**Note:** The workflow fails if a tag matching the `package.json` version already exists or if a prerelease version is on `main`.
 
 ### Manual Publishing (Alternative)
 
@@ -201,14 +189,16 @@ If you prefer manual control:
 git add .
 git commit -m "feat: add new feature"
 
-# 2. Manually bump version
-npm version minor  # or patch, or major
+# 2. Manually bump version without creating a v-prefixed tag
+npm version minor --no-git-tag-version  # or patch, or major
 
 # 3. Build and publish
 npm run build
 npm publish
 
-# 4. Push changes and tags
+# 4. Create and push a release tag that matches package.json
+VERSION=$(node -p "require('./package.json').version")
+git tag "$VERSION" -m "Release $VERSION"
 git push && git push --tags
 ```
 

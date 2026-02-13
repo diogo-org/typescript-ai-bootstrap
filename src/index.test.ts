@@ -136,6 +136,18 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(vitestContent).toContain('defineConfig');
     });
 
+    it('should register test.setup.ts in vitest config', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const vitestConfigPath = path.join(testDir, 'vitest.config.ts');
+      const vitestContent = fs.readFileSync(vitestConfigPath, 'utf-8');
+
+      expect(vitestContent).toContain("setupFiles: ['./src/test.setup.ts']");
+    });
+
     it('should copy tsconfig.json during initialization', async () => {
       await init({
         projectName: 'test-project',
@@ -310,25 +322,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         expect(fs.existsSync(dirPath), `${dir} should exist`).toBe(true);
         expect(fs.statSync(dirPath).isDirectory(), `${dir} should be a directory`).toBe(true);
       }
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should throw error if template directory is missing', async () => {
-      // This test verifies that the function handles missing templates gracefully
-      // In a real scenario, templates should always exist, but this tests error handling
-      
-      // Create a test that would fail if templates don't exist
-      // Note: In actual use, templates are bundled with the package
-      await expect(async () => {
-        // Try to initialize with a non-existent template path
-        // This would require modifying the function to accept template path
-        // For now, we just verify the function completes successfully with real templates
-        await init({
-          projectName: 'error-test',
-          targetDir: testDir,
-        });
-      }).not.toThrow();
     });
   });
 

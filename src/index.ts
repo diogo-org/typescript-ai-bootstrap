@@ -83,7 +83,6 @@ interface InitOptions {
 
 interface UpdateOptions {
   targetDir?: string;
-  force?: boolean;
 }
 
 /**
