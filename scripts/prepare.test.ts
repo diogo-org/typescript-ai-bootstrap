@@ -1,7 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
 
 // Import the function to test
-const { prepareHusky } = require('./prepare.cjs');
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { prepareHusky } = require('./prepare.cjs') as { prepareHusky: (deps?: Record<string, unknown>) => number };
 
 describe('prepare.cjs', () => {
   // Mock dependencies
@@ -10,7 +11,7 @@ describe('prepare.cjs', () => {
     requireResolve: vi.fn(),
     log: vi.fn(),
     error: vi.fn(),
-    env: {}
+    env: {} as Record<string, string>
   });
 
   it('should skip husky install when CI=true', () => {
