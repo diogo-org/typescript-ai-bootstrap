@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as prepareModule from './prepare.cjs';
 
 // Import the function to test
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { prepareHusky } = require('./prepare.cjs') as { prepareHusky: (deps?: Record<string, unknown>) => number };
+const { prepareHusky } = prepareModule as { prepareHusky: (deps?: Record<string, unknown>) => number };
 
 describe('prepare.cjs', () => {
   // Mock dependencies
