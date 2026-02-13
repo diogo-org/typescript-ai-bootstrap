@@ -98,6 +98,79 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
     });
 
+    it('should copy eslint.config.js during initialization', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const eslintConfigPath = path.join(testDir, 'eslint.config.js');
+      expect(fs.existsSync(eslintConfigPath), 'eslint.config.js should exist').toBe(true);
+      
+      // Verify content is from main project
+      const eslintContent = fs.readFileSync(eslintConfigPath, 'utf-8');
+      expect(eslintContent).toContain('eslint');
+      expect(eslintContent).toContain('typescript-eslint');
+    });
+
+    it('should copy vitest.config.ts during initialization', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const vitestConfigPath = path.join(testDir, 'vitest.config.ts');
+      expect(fs.existsSync(vitestConfigPath), 'vitest.config.ts should exist').toBe(true);
+      
+      // Verify content is from main project
+      const vitestContent = fs.readFileSync(vitestConfigPath, 'utf-8');
+      expect(vitestContent).toContain('vitest');
+      expect(vitestContent).toContain('defineConfig');
+    });
+
+    it('should copy tsconfig.json during initialization', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const tsconfigPath = path.join(testDir, 'tsconfig.json');
+      expect(fs.existsSync(tsconfigPath), 'tsconfig.json should exist').toBe(true);
+      
+      // Verify content is from main project
+      const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf-8');
+      expect(tsconfigContent).toContain('compilerOptions');
+    });
+
+    it('should copy src/test.setup.ts during initialization', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const testSetupPath = path.join(testDir, 'src', 'test.setup.ts');
+      expect(fs.existsSync(testSetupPath), 'src/test.setup.ts should exist').toBe(true);
+      
+      // Verify content is from main project
+      const testSetupContent = fs.readFileSync(testSetupPath, 'utf-8');
+      expect(testSetupContent).toContain('test');
+    });
+
+    it('should copy .gitignore during initialization', async () => {
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+      });
+
+      const gitignorePath = path.join(testDir, '.gitignore');
+      expect(fs.existsSync(gitignorePath), '.gitignore should exist').toBe(true);
+      
+      // Verify content includes common patterns
+      const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+      expect(gitignoreContent).toContain('node_modules');
+      expect(gitignoreContent).toContain('dist');
+    });
+
     it('should replace placeholders in package.json with correct project name and title', async () => {
       const projectName = 'my-awesome-project';
       const projectTitle = 'My Awesome Project Title';
@@ -300,6 +373,57 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         expect(fs.existsSync(filePath), `${file} should exist in .husky`).toBe(true);
       }
     });
+
+    it('should NOT have templates/eslint.config.js (should be copied at runtime)', () => {
+      // This test ensures we don't duplicate eslint config in the templates directory
+      const templatesEslintPath = path.join(process.cwd(), 'templates', 'eslint.config.js');
+      expect(fs.existsSync(templatesEslintPath), 'templates/eslint.config.js should not exist - it is copied at runtime').toBe(false);
+    });
+
+    it('should have eslint.config.js in the main project', () => {
+      const mainEslintPath = path.join(process.cwd(), 'eslint.config.js');
+      expect(fs.existsSync(mainEslintPath), 'eslint.config.js should exist in the main project').toBe(true);
+    });
+
+    it('should NOT have templates/vitest.config.ts (should be copied at runtime)', () => {
+      const templatesVitestPath = path.join(process.cwd(), 'templates', 'vitest.config.ts');
+      expect(fs.existsSync(templatesVitestPath), 'templates/vitest.config.ts should not exist - it is copied at runtime').toBe(false);
+    });
+
+    it('should have vitest.config.ts in the main project', () => {
+      const mainVitestPath = path.join(process.cwd(), 'vitest.config.ts');
+      expect(fs.existsSync(mainVitestPath), 'vitest.config.ts should exist in the main project').toBe(true);
+    });
+
+    it('should NOT have templates/tsconfig.json (should be copied at runtime)', () => {
+      const templatesTsconfigPath = path.join(process.cwd(), 'templates', 'tsconfig.json');
+      expect(fs.existsSync(templatesTsconfigPath), 'templates/tsconfig.json should not exist - it is copied at runtime').toBe(false);
+    });
+
+    it('should have tsconfig.json in the main project', () => {
+      const mainTsconfigPath = path.join(process.cwd(), 'tsconfig.json');
+      expect(fs.existsSync(mainTsconfigPath), 'tsconfig.json should exist in the main project').toBe(true);
+    });
+
+    it('should NOT have templates/src/test.setup.ts (should be copied at runtime)', () => {
+      const templatesTestSetupPath = path.join(process.cwd(), 'templates', 'src', 'test.setup.ts');
+      expect(fs.existsSync(templatesTestSetupPath), 'templates/src/test.setup.ts should not exist - it is copied at runtime').toBe(false);
+    });
+
+    it('should have src/test.setup.ts in the main project', () => {
+      const mainTestSetupPath = path.join(process.cwd(), 'src', 'test.setup.ts');
+      expect(fs.existsSync(mainTestSetupPath), 'src/test.setup.ts should exist in the main project').toBe(true);
+    });
+
+    it('should NOT have templates/_gitignore (should use .gitignore directly)', () => {
+      const templatesGitignorePath = path.join(process.cwd(), 'templates', '_gitignore');
+      expect(fs.existsSync(templatesGitignorePath), 'templates/_gitignore should not exist - use .gitignore directly').toBe(false);
+    });
+
+    it('should have .gitignore in the main project', () => {
+      const mainGitignorePath = path.join(process.cwd(), '.gitignore');
+      expect(fs.existsSync(mainGitignorePath), '.gitignore should exist in the main project').toBe(true);
+    });
   });
 
   describe('Project Update', () => {
@@ -360,7 +484,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         'tsconfig.node.json',
         'vite.config.ts',
         'vitest.config.ts',
-        'eslint.config.js',
         '.gitignore',
         'index.html',
       ];
@@ -478,6 +601,104 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Verify content is from main project
       const preCommitContent = fs.readFileSync(path.join(huskyDir, 'pre-commit.cjs'), 'utf-8');
       expect(preCommitContent).toContain('pre-commit');
+    });
+
+    it('should copy eslint.config.js during update', async () => {
+      // Create a project
+      await init({
+        projectName: 'eslint-update-test',
+        targetDir: testDir,
+      });
+
+      // Delete eslint.config.js to simulate old project
+      const eslintPath = path.join(testDir, 'eslint.config.js');
+      if (fs.existsSync(eslintPath)) {
+        fs.unlinkSync(eslintPath);
+      }
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Verify eslint.config.js is copied
+      expect(fs.existsSync(eslintPath)).toBe(true);
+
+      // Verify content is from main project
+      const eslintContent = fs.readFileSync(eslintPath, 'utf-8');
+      expect(eslintContent).toContain('eslint');
+      expect(eslintContent).toContain('typescript-eslint');
+    });
+
+    it('should copy vitest.config.ts during update', async () => {
+      // Create a project
+      await init({
+        projectName: 'vitest-update-test',
+        targetDir: testDir,
+      });
+
+      // Delete vitest.config.ts to simulate old project
+      const vitestPath = path.join(testDir, 'vitest.config.ts');
+      if (fs.existsSync(vitestPath)) {
+        fs.unlinkSync(vitestPath);
+      }
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Verify vitest.config.ts is copied
+      expect(fs.existsSync(vitestPath)).toBe(true);
+
+      // Verify content is from main project
+      const vitestContent = fs.readFileSync(vitestPath, 'utf-8');
+      expect(vitestContent).toContain('vitest');
+      expect(vitestContent).toContain('defineConfig');
+    });
+
+    it('should copy tsconfig.json during update', async () => {
+      // Create a project
+      await init({
+        projectName: 'tsconfig-update-test',
+        targetDir: testDir,
+      });
+
+      // Modify tsconfig.json to simulate old project
+      const tsconfigPath = path.join(testDir, 'tsconfig.json');
+      fs.writeFileSync(tsconfigPath, '{"old": true}');
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Verify tsconfig.json is updated
+      expect(fs.existsSync(tsconfigPath)).toBe(true);
+
+      // Verify content is from main project
+      const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf-8');
+      expect(tsconfigContent).toContain('compilerOptions');
+      expect(tsconfigContent).not.toContain('"old": true');
+    });
+
+    it('should copy .gitignore during update', async () => {
+      // Create a project
+      await init({
+        projectName: 'gitignore-update-test',
+        targetDir: testDir,
+      });
+
+      // Delete .gitignore to simulate old project
+      const gitignorePath = path.join(testDir, '.gitignore');
+      if (fs.existsSync(gitignorePath)) {
+        fs.unlinkSync(gitignorePath);
+      }
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Verify .gitignore is copied
+      expect(fs.existsSync(gitignorePath)).toBe(true);
+
+      // Verify content is from main project
+      const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
+      expect(gitignoreContent).toContain('node_modules');
+      expect(gitignoreContent).toContain('dist');
     });
 
     it('should preserve user\'s custom src/ directory', async () => {

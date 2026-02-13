@@ -127,7 +127,57 @@ export async function init(options: InitOptions = {}): Promise<void> {
         }
       }
     }
-        console.log('\n✅ Project initialized successfully!');
+
+    // Copy eslint.config.js from the main project
+    const sourceEslintConfig = path.join(__dirname, '..', 'eslint.config.js');
+    const targetEslintConfig = path.join(targetDir, 'eslint.config.js');
+    
+    if (fs.existsSync(sourceEslintConfig)) {
+      fs.copyFileSync(sourceEslintConfig, targetEslintConfig);
+      console.log(`Created: ${path.relative(process.cwd(), targetEslintConfig)}`);
+    }
+
+    // Copy vitest.config.ts from the main project
+    const sourceVitestConfig = path.join(__dirname, '..', 'vitest.config.ts');
+    const targetVitestConfig = path.join(targetDir, 'vitest.config.ts');
+    
+    if (fs.existsSync(sourceVitestConfig)) {
+      fs.copyFileSync(sourceVitestConfig, targetVitestConfig);
+      console.log(`Created: ${path.relative(process.cwd(), targetVitestConfig)}`);
+    }
+
+    // Copy tsconfig.json from the main project
+    const sourceTsconfig = path.join(__dirname, '..', 'tsconfig.json');
+    const targetTsconfig = path.join(targetDir, 'tsconfig.json');
+    
+    if (fs.existsSync(sourceTsconfig)) {
+      fs.copyFileSync(sourceTsconfig, targetTsconfig);
+      console.log(`Created: ${path.relative(process.cwd(), targetTsconfig)}`);
+    }
+
+    // Copy src/test.setup.ts from the main project
+    const sourceTestSetup = path.join(__dirname, '..', 'src', 'test.setup.ts');
+    const targetTestSetup = path.join(targetDir, 'src', 'test.setup.ts');
+    
+    if (fs.existsSync(sourceTestSetup)) {
+      const targetSrcDir = path.join(targetDir, 'src');
+      if (!fs.existsSync(targetSrcDir)) {
+        fs.mkdirSync(targetSrcDir, { recursive: true });
+      }
+      fs.copyFileSync(sourceTestSetup, targetTestSetup);
+      console.log(`Created: ${path.relative(process.cwd(), targetTestSetup)}`);
+    }
+
+    // Copy .gitignore from the main project
+    const sourceGitignore = path.join(__dirname, '..', '.gitignore');
+    const targetGitignore = path.join(targetDir, '.gitignore');
+    
+    if (fs.existsSync(sourceGitignore)) {
+      fs.copyFileSync(sourceGitignore, targetGitignore);
+      console.log(`Created: ${path.relative(process.cwd(), targetGitignore)}`);
+    }
+    
+    console.log('\n✅ Project initialized successfully!');
     console.log('\nNext steps:');
     console.log('  1. npm install');
     console.log('  2. npm run dev');
@@ -150,12 +200,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
  * (configuration files, not user code)
  */
 const UPDATABLE_FILES = [
-  'tsconfig.json',
   'tsconfig.node.json',
   'vite.config.ts',
-  'vitest.config.ts',
-  'eslint.config.js',
-  '.gitignore',
   'index.html',
 ];
 
@@ -336,6 +382,42 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
           updatedFiles.push(`.husky/${file}`);
         }
       }
+    }
+
+    // Copy eslint.config.js from the main project
+    const sourceEslintConfig = path.join(__dirname, '..', 'eslint.config.js');
+    const targetEslintConfig = path.join(targetDir, 'eslint.config.js');
+    
+    if (fs.existsSync(sourceEslintConfig)) {
+      fs.copyFileSync(sourceEslintConfig, targetEslintConfig);
+      updatedFiles.push('eslint.config.js');
+    }
+
+    // Copy vitest.config.ts from the main project
+    const sourceVitestConfig = path.join(__dirname, '..', 'vitest.config.ts');
+    const targetVitestConfig = path.join(targetDir, 'vitest.config.ts');
+    
+    if (fs.existsSync(sourceVitestConfig)) {
+      fs.copyFileSync(sourceVitestConfig, targetVitestConfig);
+      updatedFiles.push('vitest.config.ts');
+    }
+
+    // Copy tsconfig.json from the main project
+    const sourceTsconfig = path.join(__dirname, '..', 'tsconfig.json');
+    const targetTsconfig = path.join(targetDir, 'tsconfig.json');
+    
+    if (fs.existsSync(sourceTsconfig)) {
+      fs.copyFileSync(sourceTsconfig, targetTsconfig);
+      updatedFiles.push('tsconfig.json');
+    }
+
+    // Copy .gitignore from the main project
+    const sourceGitignore = path.join(__dirname, '..', '.gitignore');
+    const targetGitignore = path.join(targetDir, '.gitignore');
+    
+    if (fs.existsSync(sourceGitignore)) {
+      fs.copyFileSync(sourceGitignore, targetGitignore);
+      updatedFiles.push('.gitignore');
     }
 
     console.log('✅ Updated files:');
