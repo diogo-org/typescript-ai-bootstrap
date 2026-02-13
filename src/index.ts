@@ -7,9 +7,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const UPDATABLE_FILES = [
+  // Template-specific configuration files
   'tsconfig.node.json',
   'vite.config.ts',
   'index.html',
+  // Root project configuration files (copied from main project)
+  'tsconfig.json',
+  'vitest.config.ts',
+  '.gitignore',
+  'eslint.config.js',
+  // Note: src/test.setup.ts is intentionally NOT updatable to preserve user customizations
 ];
 
 /**
@@ -95,11 +102,9 @@ function copyTemplate(
     }
     const files = fs.readdirSync(templatePath);
     for (const file of files) {
-      // Rename _gitignore to .gitignore during copy
-      const targetFile = file === '_gitignore' ? '.gitignore' : file;
       copyTemplate(
         path.join(templatePath, file),
-        path.join(targetPath, targetFile),
+        path.join(targetPath, file),
         replacements
       );
     }
@@ -164,9 +169,6 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, logCreated);
-
-    // Copy vitest.config.ts from the main project
-    copyFile('vitest.config.ts', targetDir, logCreated);
 
     // Copy tsconfig.json from the main project
     copyFile('tsconfig.json', targetDir, logCreated);
@@ -285,6 +287,21 @@ function updatePackageJson(
     ...processedTemplatePkg.devDependencies,
   };
 
+  // Update dependencies (merge, preferring template versions)
+  // This is important for React templates that have dependencies like react and react-dom
+  if (processedTemplatePkg.dependencies) {
+    targetPkg.dependencies = {
+      ...targetPkg.dependencies,
+      ...processedTemplatePkg.dependencies,
+    };
+  }
+
+  // Preserve/update typescriptBootstrap metadata
+  // Prefer existing target metadata if present, otherwise use template metadata
+  if (processedTemplatePkg.typescriptBootstrap) {
+    targetPkg.typescriptBootstrap = targetPkg.typescriptBootstrap ?? processedTemplatePkg.typescriptBootstrap;
+  }
+
   fs.writeFileSync(targetPath, JSON.stringify(targetPkg, null, 2) + '\n', 'utf-8');
 }
 
@@ -306,8 +323,18 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility
 
   console.log(`\n🔄 Updating TypeScript Bootstrap project: ${projectName}\n`);
+  console.log('⚠️  Warning: This will overwrite configuration files and template-provided scripts/dependencies.');
+  console.log('   Only custom additions (new scripts/dependencies not in the template) will be preserved.\n');
 
   const templateDir = path.join(__dirname, '..', 'templates', template);
+  
+  // Verify template directory exists
+  if (!fs.existsSync(templateDir)) {
+    throw new Error(
+      `Template "${template}" not found in ${path.join(__dirname, '..', 'templates')}. ` +
+      'Please verify your project configuration or reinstall TypeScript Bootstrap.'
+    );
+  }
   
   const replacements = {
     PROJECT_NAME: projectName,
@@ -342,11 +369,11 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, trackUpdated);
 
-    // Copy vitest.config.ts from the main project
-    copyFile('vitest.config.ts', targetDir, trackUpdated);
-
     // Copy tsconfig.json from the main project
     copyFile('tsconfig.json', targetDir, trackUpdated);
+
+    // Note: src/test.setup.ts is NOT copied during update to preserve user customizations
+    // It is only created during init and users can modify it as needed
 
     // Copy .gitignore from the main project
     copyFile('.gitignore', targetDir, trackUpdated);

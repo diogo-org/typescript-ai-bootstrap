@@ -62,11 +62,11 @@ npm install
 ```
 
 The update command will:
-- ✅ Update configuration files (tsconfig, vite.config, vitest.config, eslint.config, etc.)
-- ✅ Merge package.json scripts and dependencies
+- ✅ Update configuration files (tsconfig, vite.config, vitest.config, eslint.config, etc.) to match the template (your local changes to these files will be overwritten)
+- ✅ Merge package.json scripts and dependencies by applying the latest template values and adding any extra custom scripts/dependencies you've defined (note: changes to template-provided entries will be overwritten)
 - ✅ Update .gitignore with latest patterns
 - ✅ Preserve your source code in `src/` directory
-- ✅ Keep your custom dependencies and settings
+- ✅ Preserve additional custom dependencies, scripts, and settings that are not part of the template while resetting template-provided configuration to the latest version
 
 ### Available Scripts
 
