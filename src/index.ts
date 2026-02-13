@@ -32,10 +32,15 @@ function copyDirectory(
     for (const file of files) {
       const sourcePath = path.join(sourceDir, file);
       const targetPath = path.join(targetDir, file);
+      const relPath = `${sourceRelPath}/${file}`;
       
-      if (fs.statSync(sourcePath).isFile()) {
+      const stat = fs.statSync(sourcePath);
+      if (stat.isDirectory()) {
+        // Recursively copy subdirectories
+        copyDirectory(relPath, targetBaseDir, fileCallback);
+      } else if (stat.isFile()) {
         fs.copyFileSync(sourcePath, targetPath);
-        fileCallback(`${sourceRelPath}/${file}`, targetPath);
+        fileCallback(relPath, targetPath);
       }
     }
   }
@@ -236,6 +241,12 @@ function updateTemplate(
         content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
       }
 
+      // Ensure target directory exists
+      const targetDir = path.dirname(targetPath);
+      if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+      }
+
       fs.writeFileSync(targetPath, content, 'utf-8');
       updatedFiles.push(currentRelativePath);
     }
@@ -286,8 +297,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
   // Check if this is a valid project
   if (!fs.existsSync(packageJsonPath)) {
-    console.error('❌ No package.json found. This doesn\'t appear to be a valid project.');
-    process.exit(1);
+    throw new Error('No package.json found. This doesn\'t appear to be a valid project.');
   }
 
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
