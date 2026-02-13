@@ -300,8 +300,26 @@ function updatePackageJson(
   targetPath: string,
   replacements: Record<string, string>
 ): void {
-  const templatePkg = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
-  const targetPkg = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
+  let templatePkg;
+  let targetPkg;
+
+  try {
+    templatePkg = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
+  } catch (error) {
+    throw new Error(
+      `Failed to parse template package.json at ${templatePath}`,
+      { cause: error }
+    );
+  }
+
+  try {
+    targetPkg = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
+  } catch (error) {
+    throw new Error(
+      `Failed to parse package.json at ${targetPath}. Please ensure package.json is valid JSON format.`,
+      { cause: error }
+    );
+  }
 
   // Replace placeholders in template package.json
   let templateContent = JSON.stringify(templatePkg, null, 2);
@@ -354,7 +372,16 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     throw new Error('No package.json found. This doesn\'t appear to be a valid project.');
   }
 
-  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  let packageJson;
+  try {
+    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  } catch (error) {
+    throw new Error(
+      `Failed to parse package.json: ${error instanceof Error ? error.message : 'Invalid JSON'}. ` +
+      'Please ensure package.json is valid JSON format.'
+    );
+  }
+
   const projectName = packageJson.name || path.basename(targetDir);
   const projectTitle = packageJson.description || projectName;
   const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility

@@ -10,10 +10,9 @@ Authored by Copilot, guided by Diogo.
 - 🎯 **TypeScript** - Strict type checking with best practices
 - ✅ **Vitest** - Fast unit testing with 80% coverage requirements
 - 🔍 **ESLint** - Strict linting rules for quality code
-- 🧪 **Testing Library** - React component testing utilities
-- 🎨 **React** - Modern React 18 with TypeScript
-- � **Pre-commit Hooks** - Automated quality checks before every commit
-- �📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
+- 🎨 **Two Templates** - React web apps or vanilla TypeScript projects
+- 🪝 **Pre-commit Hooks** - Automated quality checks before every commit
+- 📦 **Ready for CI/CD** - Pre-configured for GitHub Actions
 
 ## Philosophy
 
@@ -34,12 +33,37 @@ npm install -g @diogo-raphael-cravo/typescript-bootstrap
 
 ## Usage
 
+### Choose Your Template
+
+TypeScript Bootstrap offers two project templates:
+
+**React Template (default)**
+- Modern React 18 with TypeScript
+- React Testing Library for component testing
+- Vite dev server with HMR
+- Perfect for web applications and SPAs
+
+**TypeScript Template**
+- Vanilla TypeScript for Node.js applications
+- tsx for fast development with watch mode
+- No React dependencies
+- Perfect for CLIs, libraries, backend services, or scripts
+
 ### Initialize a New Project
 
+**React project (default):**
 ```bash
 mkdir my-project
 cd my-project
 typescript-bootstrap
+npm install
+```
+
+**TypeScript project:**
+```bash
+mkdir my-project
+cd my-project
+typescript-bootstrap --template typescript
 npm install
 ```
 
@@ -72,9 +96,20 @@ The update command will:
 
 ### Available Scripts
 
-- `npm run dev` - Start development server with HMR
+**React template:**
+- `npm run dev` - Start Vite development server with HMR
 - `npm run build` - Build for production (TypeScript check + Vite build)
-- `npm run preview` - Preview production build locally
+- `npm run preview` - Preview production build in browser
+- `npm test` - Run all tests once
+- `npm run test:ui` - Run tests with interactive UI
+- `npm run test:coverage` - Generate coverage report (requires 80% minimum)
+- `npm run lint` - Check code for linting issues
+- `npm run lint:fix` - Auto-fix linting issues
+
+**TypeScript template:**
+- `npm run dev` - Run with tsx watch mode (auto-reloads on changes)
+- `npm run build` - Build for production (TypeScript compilation + Vite bundling)
+- `npm run preview` - Run the built application
 - `npm test` - Run all tests once
 - `npm run test:ui` - Run tests with interactive UI
 - `npm run test:coverage` - Generate coverage report (requires 80% minimum)
@@ -83,6 +118,7 @@ The update command will:
 
 ## Project Structure
 
+**React template:**
 ```
 my-project/
 ├── src/
@@ -90,6 +126,21 @@ my-project/
 │   ├── test.setup.ts     # Test environment setup
 │   └── vite-env.d.ts     # Vite type declarations
 ├── index.html            # HTML entry point
+├── package.json          # Dependencies and scripts
+├── tsconfig.json         # TypeScript config for app
+├── tsconfig.node.json    # TypeScript config for build tools
+├── vite.config.ts        # Vite configuration
+├── vitest.config.ts      # Vitest test configuration
+└── eslint.config.js      # ESLint rules
+```
+
+**TypeScript template:**
+```
+my-project/
+├── src/
+│   ├── main.ts           # Application entry point
+│   ├── test.setup.ts     # Test environment setup
+│   └── vite-env.d.ts     # Vite type declarations
 ├── package.json          # Dependencies and scripts
 ├── tsconfig.json         # TypeScript config for app
 ├── tsconfig.node.json    # TypeScript config for build tools

@@ -30,13 +30,16 @@ jobs:
         id: wait-artifact
         run: |
           echo "Checking artifact availability for workflow run ${{ github.event.workflow_run.id }}..."
-          MAX_ATTEMPTS=30
+          # Constants for artifact polling
+          ARTIFACT_POLLING_MAX_ATTEMPTS=30  # 5 minutes total wait time (30 attempts × 10 seconds)
+          ARTIFACT_POLLING_INTERVAL_SECONDS=10
+          
           ATTEMPT=0
           ARTIFACT_FOUND=false
           
-          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+          while [ $ATTEMPT -lt $ARTIFACT_POLLING_MAX_ATTEMPTS ]; do
             ATTEMPT=$((ATTEMPT + 1))
-            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: Checking for 'dist' artifact..."
+            echo "Attempt $ATTEMPT/$ARTIFACT_POLLING_MAX_ATTEMPTS: Checking for 'dist' artifact..."
             
             # Query GitHub API for artifacts
             RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
@@ -54,12 +57,12 @@ jobs:
               fi
             fi
             
-            echo "Artifact not yet available, waiting 10 seconds..."
-            sleep 10
+            echo "Artifact not yet available, waiting $ARTIFACT_POLLING_INTERVAL_SECONDS seconds..."
+            sleep $ARTIFACT_POLLING_INTERVAL_SECONDS
           done
           
           if [ "$ARTIFACT_FOUND" = false ]; then
-            echo "::error::Artifact 'dist' not found after $MAX_ATTEMPTS attempts"
+            echo "::error::Artifact 'dist' not found after $ARTIFACT_POLLING_MAX_ATTEMPTS attempts"
             exit 1
           fi
         env:

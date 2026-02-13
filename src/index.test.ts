@@ -226,7 +226,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(readmeContent).not.toContain('{{PROJECT_NAME}}');
     });
 
-    it('should create .gitignore from _gitignore template', async () => {
+    it('should copy .gitignore from root during initialization', async () => {
       await init({
         projectName: 'test-project',
         targetDir: testDir,
@@ -426,6 +426,129 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const reactTemplatePath = path.join(process.cwd(), 'templates', 'react');
       expect(fs.existsSync(reactTemplatePath), 'templates/react should exist').toBe(true);
       expect(fs.statSync(reactTemplatePath).isDirectory()).toBe(true);
+    });
+
+    it('should create typescript template with tsx dependency', async () => {
+      await init({
+        projectName: 'tsx-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJson = readPackageJson(testDir);
+
+      // TypeScript template should have tsx for development
+      expect(packageJson.devDependencies).toHaveProperty('tsx');
+      expect(packageJson.devDependencies.tsx).toMatch(/^\^?\d+\.\d+\.\d+/);
+    });
+
+    it('should create typescript template with correct dev script', async () => {
+      await init({
+        projectName: 'dev-script-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJson = readPackageJson(testDir);
+
+      // TypeScript template uses tsx watch, not vite
+      expect(packageJson.scripts.dev).toContain('tsx watch');
+      expect(packageJson.scripts.dev).toContain('src/main.ts');
+    });
+
+    it('should have different scripts between react and typescript templates', async () => {
+      // Create React project
+      const reactDir = path.join(testDir, 'react-project');
+      fs.mkdirSync(reactDir, { recursive: true });
+      await init({
+        projectName: 'react-scripts-test',
+        targetDir: reactDir,
+        template: 'react',
+      });
+
+      // Create TypeScript project
+      const tsDir = path.join(testDir, 'ts-project');
+      fs.mkdirSync(tsDir, { recursive: true });
+      await init({
+        projectName: 'ts-scripts-test',
+        targetDir: tsDir,
+        template: 'typescript',
+      });
+
+      const reactPkg = JSON.parse(fs.readFileSync(path.join(reactDir, 'package.json'), 'utf-8'));
+      const tsPkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf-8'));
+
+      // React uses vite dev server
+      expect(reactPkg.scripts.dev).toBe('vite');
+
+      // TypeScript uses tsx watch
+      expect(tsPkg.scripts.dev).toBe('tsx watch src/main.ts');
+
+      // React preview uses vite preview
+      expect(reactPkg.scripts.preview).toBe('vite preview');
+
+      // TypeScript preview runs the built file
+      expect(tsPkg.scripts.preview).toBe('node dist/main.js');
+    });
+
+    it('should create typescript template with Node.js-style main.ts', async () => {
+      await init({
+        projectName: 'node-main-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const mainTsPath = path.join(testDir, 'src', 'main.ts');
+      const mainContent = fs.readFileSync(mainTsPath, 'utf-8');
+
+      // TypeScript template should use console.log
+      expect(mainContent).toContain('console.log');
+      expect(mainContent).not.toContain('document.');
+      expect(mainContent).not.toContain('innerHTML');
+    });
+
+    it('should create react template with DOM-based main.tsx', async () => {
+      await init({
+        projectName: 'dom-main-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      const mainTsxPath = path.join(testDir, 'src', 'main.tsx');
+      const mainContent = fs.readFileSync(mainTsxPath, 'utf-8');
+
+      // React template should use React DOM APIs
+      expect(mainContent).toContain('ReactDOM');
+      expect(mainContent).toContain('createRoot');
+      expect(mainContent).not.toContain('console.log');
+    });
+
+    it('should store correct template metadata in package.json', async () => {
+      // TypeScript template
+      const tsDir = path.join(testDir, 'ts-metadata');
+      fs.mkdirSync(tsDir, { recursive: true });
+      await init({
+        projectName: 'ts-metadata-test',
+        targetDir: tsDir,
+        template: 'typescript',
+      });
+
+      const tsPkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf-8'));
+      expect(tsPkg.typescriptBootstrap).toBeDefined();
+      expect(tsPkg.typescriptBootstrap.template).toBe('typescript');
+
+      // React template
+      const reactDir = path.join(testDir, 'react-metadata');
+      fs.mkdirSync(reactDir, { recursive: true });
+      await init({
+        projectName: 'react-metadata-test',
+        targetDir: reactDir,
+        template: 'react',
+      });
+
+      const reactPkg = JSON.parse(fs.readFileSync(path.join(reactDir, 'package.json'), 'utf-8'));
+      expect(reactPkg.typescriptBootstrap).toBeDefined();
+      expect(reactPkg.typescriptBootstrap.template).toBe('react');
     });
   });
 
@@ -1102,6 +1225,19 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       })).rejects.toThrow(/Invalid template/);
     });
 
+    it('should throw error when copying files fails during init', async () => {
+      // Create a file where a directory needs to be created (this will cause an error)  
+      const srcPath = path.join(testDir, 'src');
+      fs.writeFileSync(srcPath, 'this is a file, not a directory', 'utf-8');
+
+      // Init should fail when trying to create src directory
+      await expect(init({
+        projectName: 'copy-error-test',
+        targetDir: testDir,
+        template: 'react',
+      })).rejects.toThrow();
+    });
+
     it('should create nested directories during update if they don\'t exist', async () => {
       // Create a minimal project
       await init({
@@ -1123,6 +1259,464 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(huskyDir)).toBe(true);
       expect(fs.existsSync(path.join(huskyDir, 'pre-commit'))).toBe(true);
       expect(fs.existsSync(path.join(huskyDir, 'pre-commit.cjs'))).toBe(true);
+    });
+
+    it('should maintain typescript template with tsx dependency after update', async () => {
+      // Create TypeScript project
+      await init({
+        projectName: 'tsx-update-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Verify initial state
+      let packageJson = readPackageJson(testDir);
+      expect(packageJson.devDependencies).toHaveProperty('tsx');
+
+      // Remove tsx to simulate outdated project
+      delete packageJson.devDependencies.tsx;
+      fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify tsx is restored
+      packageJson = readPackageJson(testDir);
+      expect(packageJson.devDependencies).toHaveProperty('tsx');
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+    });
+
+    it('should maintain typescript template scripts after update', async () => {
+      // Create TypeScript project
+      await init({
+        projectName: 'ts-scripts-update-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Verify initial scripts
+      let packageJson = readPackageJson(testDir);
+      expect(packageJson.scripts.dev).toBe('tsx watch src/main.ts');
+      expect(packageJson.scripts.preview).toBe('node dist/main.js');
+
+      // Corrupt scripts to simulate manual changes
+      packageJson.scripts.dev = 'vite'; // Wrong for TypeScript template
+      packageJson.scripts.preview = 'vite preview'; // Wrong for TypeScript template
+      fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify scripts are restored correctly
+      packageJson = readPackageJson(testDir);
+      expect(packageJson.scripts.dev).toBe('tsx watch src/main.ts');
+      expect(packageJson.scripts.preview).toBe('node dist/main.js');
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+    });
+
+    it('should maintain react template dependencies after update', async () => {
+      // Create React project
+      await init({
+        projectName: 'react-deps-update-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Verify initial state
+      let packageJson = readPackageJson(testDir);
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.dependencies).toHaveProperty('react-dom');
+      expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
+
+      // Remove React deps to simulate outdated project
+      delete packageJson.dependencies.react;
+      delete packageJson.devDependencies['@vitejs/plugin-react'];
+      fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify React deps are restored
+      packageJson = readPackageJson(testDir);
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.dependencies).toHaveProperty('react-dom');
+      expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
+      expect(packageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should not add React dependencies to typescript template during update', async () => {
+      // Create TypeScript project
+      await init({
+        projectName: 'no-react-contamination-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Verify no React deps initially
+      let packageJson = readPackageJson(testDir);
+      expect(packageJson.dependencies).toBeUndefined();
+      expect(packageJson.devDependencies).not.toHaveProperty('@vitejs/plugin-react');
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify still no React deps after update
+      packageJson = readPackageJson(testDir);
+      expect(packageJson.dependencies).toBeUndefined();
+      expect(packageJson.devDependencies).not.toHaveProperty('@vitejs/plugin-react');
+      expect(packageJson.devDependencies).not.toHaveProperty('@testing-library/react');
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+    });
+
+    it('should not add tsx to react template during update', async () => {
+      // Create React project
+      await init({
+        projectName: 'no-tsx-contamination-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Verify tsx not present initially (React doesn't need it)
+      let packageJson = readPackageJson(testDir);
+      expect(packageJson.devDependencies).not.toHaveProperty('tsx');
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify tsx still not present after update
+      packageJson = readPackageJson(testDir);
+      expect(packageJson.devDependencies).not.toHaveProperty('tsx');
+      expect(packageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should preserve index.html for react template during update', async () => {
+      // Create React project
+      await init({
+        projectName: 'react-html-update-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Verify index.html exists
+      const indexHtmlPath = path.join(testDir, 'index.html');
+      expect(fs.existsSync(indexHtmlPath)).toBe(true);
+
+      // Modify index.html
+      fs.writeFileSync(indexHtmlPath, '<html><body>old</body></html>');
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify index.html is updated
+      expect(fs.existsSync(indexHtmlPath)).toBe(true);
+      const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
+      expect(indexHtml).not.toBe('<html><body>old</body></html>');
+      expect(indexHtml).toContain('main.tsx');
+    });
+
+    it('should not create index.html for typescript template during update', async () => {
+      // Create TypeScript project
+      await init({
+        projectName: 'ts-no-html-update-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Verify index.html doesn't exist
+      const indexHtmlPath = path.join(testDir, 'index.html');
+      expect(fs.existsSync(indexHtmlPath)).toBe(false);
+
+      // Update project
+      await update({ targetDir: testDir });
+
+      // Verify index.html still doesn't exist
+      expect(fs.existsSync(indexHtmlPath)).toBe(false);
+    });
+
+    it('should throw error when target package.json is corrupted during update', async () => {
+      // Create a valid project first
+      await init({
+        projectName: 'corrupted-pkg-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Corrupt the package.json
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, '{ invalid json content', 'utf-8');
+
+      // Update should throw error about invalid  JSON
+      await expect(update({ targetDir: testDir })).rejects.toThrow(/Failed to parse package\.json/);
+      await expect(update({ targetDir: testDir })).rejects.toThrow(/valid JSON format/);
+    });
+
+    it('should add typescriptBootstrap metadata when updating old project without it', async () => {
+      // Create a project
+      await init({
+        projectName: 'old-project-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Remove typescriptBootstrap metadata to simulate old project
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      delete packageJson.typescriptBootstrap;
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Update should add metadata
+      await update({ targetDir: testDir });
+
+      // Verify metadata was added
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeDefined();
+      expect(updatedPackageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should update project created without dependencies field', async () => {
+      // Create TypeScript project (has no dependencies)
+      await init({
+        projectName: 'no-deps-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Remove dependencies field entirely
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      delete packageJson.dependencies;
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Update should handle missing dependencies gracefully
+      await update({ targetDir: testDir });
+
+      // Verify update succeeded
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.scripts).toBeDefined();
+    });
+
+    it('should handle error that is not Error instanceof during package.json parse', async () => {
+      // Create a valid project first
+      await init({
+        projectName: 'non-error-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Corrupt the package.json with invalid JSON that will throw a non-Error object
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, '{ "name": undefined }', 'utf-8');
+
+      // Update should throw error
+      await expect(update({ targetDir: testDir })).rejects.toThrow(/Failed to parse package\.json/);
+    });
+
+    it('should throw error when template file is missing during update', async () => {
+      // Create a valid project
+      await init({
+        projectName: 'missing-template-file-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Manually delete the template directory to simulate missing template
+      const templateDir = path.join(__dirname, '..', 'templates', 'react');
+      const templateBackup = templateDir + '_backuptest123';
+      
+      // Move template directory
+      if (fs.existsSync(templateDir)) {
+        fs.renameSync(templateDir, templateBackup);
+      }
+
+      try {
+        // Update should throw error about missing template
+        await expect(update({ targetDir: testDir })).rejects.toThrow(/not found/);
+      } finally {
+        // Restore template directory
+        if (fs.existsSync(templateBackup)) {
+          fs.renameSync(templateBackup, templateDir);
+        }
+      }
+    });
+
+    it('should handle update failure and rethrow error', async () => {
+      // Create an invalid target directory that will cause update to fail
+      const invalidDir = path.join(testDir, 'invalid-update-test');
+      fs.mkdirSync(invalidDir, { recursive: true });
+      
+      // Create a minimal package.json to pass initial check
+      const packageJsonPath = path.join(invalidDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, JSON.stringify({
+        name: 'test',
+        typescriptBootstrap: { template: 'nonexistent-template' }
+      }), 'utf-8');
+
+      // Update should fail and catch block should execute
+      await expect(update({ targetDir: invalidDir })).rejects.toThrow();
+    });
+
+    it('should create nested directory structure when copying files during init', async () => {
+      // Use a deeply nested directory that doesn't exist
+      const deepDir = path.join(testDir, 'level1', 'level2', 'level3', 'project');
+      
+      await init({
+        projectName: 'deep-dir-test',
+        targetDir: deepDir,
+        template: 'react',
+      });
+
+      // Verify the deep directory structure was created
+      expect(fs.existsSync(deepDir)).toBe(true);
+      expect(fs.existsSync(path.join(deepDir, 'package.json'))).toBe(true);
+      expect(fs.existsSync(path.join(deepDir, '.github', 'copilot-instructions.md'))).toBe(true);
+      expect(fs.existsSync(path.join(deepDir, '.husky', 'pre-commit.cjs'))).toBe(true);
+    });
+
+    it('should create missing subdirectories during update', async () => {
+      // Create a project first
+      await init({
+        projectName: 'missing-subdirs-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Delete .github directory completely
+      const githubDir = path.join(testDir, '.github');
+      if (fs.existsSync(githubDir)) {
+        fs.rmSync(githubDir, { recursive: true, force: true });
+      }
+
+      // Verify directory is deleted
+      expect(fs.existsSync(githubDir)).toBe(false);
+
+      // Update should recreate .github and its subdirectories
+      await update({ targetDir: testDir });
+
+      // Verify directories were recreated
+      expect(fs.existsSync(path.join(testDir, '.github', 'workflows'))).toBe(true);
+      expect(fs.existsSync(path.join(testDir, '.github', 'copilot-instructions.md'))).toBe(true);
+    });
+
+    it('should handle init into bare directory requiring all directory creation', async () => {
+      // Create a completely empty directory
+      const bareDir = path.join(testDir, 'bare-dir-test');
+      fs.mkdirSync(bareDir, { recursive: true });
+
+      // Verify it's empty
+      const files = fs.readdirSync(bareDir);
+      expect(files.length).toBe(0);
+
+      // Initialize should create all subdirectories
+      await init({
+        projectName: 'bare-init-test',
+        targetDir: bareDir,
+        template: 'typescript',
+      });
+
+      // Verify all expected directories and files were created
+      expect(fs.existsSync(path.join(bareDir, 'package.json'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, 'src'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, '.github', 'workflows'))).toBe(true);
+    expect(fs.existsSync(path.join(bareDir, '.github', 'copilot-instructions.md'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, '.husky'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, '.gitignore'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, 'eslint.config.js'))).toBe(true);
+    });
+  });
+
+  describe('Error Handling', () => {
+    it('should throw error when invalid template is specified', async () => {
+      await expect(
+        init({
+          projectName: 'test-project',
+          targetDir: testDir,
+          template: 'nonexistent-template' as any,
+        })
+      ).rejects.toThrow('Invalid template: nonexistent-template');
+    });
+
+    it('should throw error when target package.json is invalid', async () => {
+      // Initialize a valid project first
+      await init({
+        projectName: 'test-project',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Corrupt the package.json
+      const packagePath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packagePath, '{ invalid json }', 'utf-8');
+
+      await expect(
+        update({
+          targetDir: testDir,
+          template: 'typescript',
+        })
+      ).rejects.toThrow('Failed to parse package.json');
+    });
+
+    it('should handle update errors gracefully', async () => {
+      // Try to update a non-existent directory
+      const nonExistentDir = path.join(testDir, 'does-not-exist');
+
+      await expect(
+        update({
+          targetDir: nonExistentDir,
+          template: 'typescript',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle missing package.json gracefully during update', async () => {
+      // Create a directory without package.json
+      const bareDir = path.join(testDir, 'no-package');
+      fs.mkdirSync(bareDir, { recursive: true });
+
+      await expect(
+        update({
+          targetDir: bareDir,
+          template: 'typescript',
+        })
+      ).rejects.toThrow();
+    });
+
+    it('should handle deeply nested directory creation during init', async () => {
+      // Create a deeply nested target that doesn't exist yet
+      const deepDir = path.join(testDir, 'level1', 'level2', 'level3', 'project');
+      
+      // Don't create it - let init create all levels
+      await init({
+        projectName: 'deep-project',
+        targetDir: deepDir,
+        template: 'typescript',
+      });
+
+      // Verify project was created successfully
+      expect(fs.existsSync(path.join(deepDir, 'package.json'))).toBe(true);
+      expect(fs.existsSync(path.join(deepDir, 'src'))).toBe(true);
+    });
+
+    it('should handle init then update cycle with file cleanup', async () => {
+      // Initialize project
+      await init({
+        projectName: 'cycle-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Remove a config file that should be restored by update
+      const vitePath = path.join(testDir, 'vite.config.ts');
+      fs.unlinkSync(vitePath);
+
+      expect(fs.existsSync(vitePath)).toBe(false);
+
+      // Update should restore it
+      await update({
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      expect(fs.existsSync(vitePath)).toBe(true);
     });
   });
 });

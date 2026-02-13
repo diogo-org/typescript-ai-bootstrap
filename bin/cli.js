@@ -11,8 +11,14 @@ if (command === 'update') {
     process.exit(1);
   });
 } else {
+  // Parse template flag
+  const templateIndex = args.indexOf('--template');
+  const template = templateIndex !== -1 && args[templateIndex + 1] 
+    ? args[templateIndex + 1] 
+    : undefined;
+
   // Default to init command
-  init().catch((error) => {
+  init({ template }).catch((error) => {
     console.error('Error initializing project:', error);
     process.exit(1);
   });
