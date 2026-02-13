@@ -1,6 +1,6 @@
 {
   "name": "@diogo-raphael-cravo/typescript-bootstrap",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "High-quality TypeScript project scaffolding with best practices for AI-assisted development",
   "type": "module",
   "main": "dist/index.js",
@@ -12,6 +12,7 @@
     "dist",
     "templates",
     "bin",
+    "scripts",
     ".github",
     ".husky",
     "eslint.config.js",
@@ -28,7 +29,10 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "prepare": "husky install"
+    "prepare": "node scripts/prepare.cjs",
+    "version:patch": "npm version patch --no-git-tag-version",
+    "version:minor": "npm version minor --no-git-tag-version",
+    "version:major": "npm version major --no-git-tag-version"
   },
   "keywords": [
     "typescript",
