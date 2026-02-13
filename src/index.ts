@@ -129,9 +129,9 @@ function processFileContent(
 ): void {
   let content = fs.readFileSync(templatePath, 'utf-8');
   
-  // Replace placeholders
+  // Replace placeholders using function to avoid $ being treated as replacement pattern
   for (const [key, value] of Object.entries(replacements)) {
-    content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    content = content.replace(new RegExp(`{{${key}}}`, 'g'), () => value);
   }
 
   // Ensure target directory exists if requested
@@ -305,26 +305,24 @@ function updatePackageJson(
 
   try {
     templatePkg = JSON.parse(fs.readFileSync(templatePath, 'utf-8'));
-  } catch (error) {
+  } catch {
     throw new Error(
-      `Failed to parse template package.json at ${templatePath}`,
-      { cause: error }
+      `Failed to parse template package.json at ${templatePath}`
     );
   }
 
   try {
     targetPkg = JSON.parse(fs.readFileSync(targetPath, 'utf-8'));
-  } catch (error) {
+  } catch {
     throw new Error(
-      `Failed to parse package.json at ${targetPath}. Please ensure package.json is valid JSON format.`,
-      { cause: error }
+      `Failed to parse package.json at ${targetPath}. Please ensure package.json is valid JSON format.`
     );
   }
 
-  // Replace placeholders in template package.json
+  // Replace placeholders in template package.json using function to avoid $ being treated as replacement pattern
   let templateContent = JSON.stringify(templatePkg, null, 2);
   for (const [key, value] of Object.entries(replacements)) {
-    templateContent = templateContent.replace(new RegExp(`{{${key}}}`, 'g'), value);
+    templateContent = templateContent.replace(new RegExp(`{{${key}}}`, 'g'), () => value);
   }
   const processedTemplatePkg = JSON.parse(templateContent);
 

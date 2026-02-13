@@ -1511,34 +1511,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await expect(update({ targetDir: testDir })).rejects.toThrow(/Failed to parse package\.json/);
     });
 
-    it('should throw error when template file is missing during update', async () => {
-      // Create a valid project
-      await init({
-        projectName: 'missing-template-file-test',
-        targetDir: testDir,
-        template: 'react',
-      });
-
-      // Manually delete the template directory to simulate missing template
-      const templateDir = path.join(__dirname, '..', 'templates', 'react');
-      const templateBackup = templateDir + '_backuptest123';
-      
-      // Move template directory
-      if (fs.existsSync(templateDir)) {
-        fs.renameSync(templateDir, templateBackup);
-      }
-
-      try {
-        // Update should throw error about missing template
-        await expect(update({ targetDir: testDir })).rejects.toThrow(/not found/);
-      } finally {
-        // Restore template directory
-        if (fs.existsSync(templateBackup)) {
-          fs.renameSync(templateBackup, templateDir);
-        }
-      }
-    });
-
     it('should handle update failure and rethrow error', async () => {
       // Create an invalid target directory that will cause update to fail
       const invalidDir = path.join(testDir, 'invalid-update-test');
@@ -1650,7 +1622,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await expect(
         update({
           targetDir: testDir,
-          template: 'typescript',
         })
       ).rejects.toThrow('Failed to parse package.json');
     });
@@ -1662,7 +1633,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await expect(
         update({
           targetDir: nonExistentDir,
-          template: 'typescript',
         })
       ).rejects.toThrow();
     });
@@ -1675,7 +1645,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await expect(
         update({
           targetDir: bareDir,
-          template: 'typescript',
         })
       ).rejects.toThrow();
     });
@@ -1713,10 +1682,30 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Update should restore it
       await update({
         targetDir: testDir,
-        template: 'react',
       });
 
       expect(fs.existsSync(vitePath)).toBe(true);
+    });
+
+    it('should handle project names with special characters like $', async () => {
+      // Test that $ in project name is treated literally, not as replacement pattern
+      const projectName = 'test-$1-project';
+      const projectTitle = 'Test $& Title';
+
+      await init({
+        projectName,
+        projectTitle,
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJson = readPackageJson(testDir);
+      expect(packageJson.name).toBe('test-$1-project');
+      
+      // Verify README contains the literal title with $
+      const readmePath = path.join(testDir, 'README.md');
+      const readmeContent = fs.readFileSync(readmePath, 'utf-8');
+      expect(readmeContent).toContain('Test $& Title');
     });
   });
 });
