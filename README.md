@@ -41,6 +41,33 @@ typescript-bootstrap
 npm install
 ```
 
+### Update an Existing Project
+
+When a new version of `typescript-bootstrap` is released, you can update your existing project to get the latest configuration files and tooling:
+
+```bash
+cd my-project
+
+# Check for updates
+npm outdated @diogo-raphael-cravo/typescript-bootstrap
+
+# Update to latest version
+npm install @diogo-raphael-cravo/typescript-bootstrap@latest
+
+# Apply template updates
+typescript-bootstrap update
+
+# Install any new dependencies
+npm install
+```
+
+The update command will:
+- ✅ Update configuration files (tsconfig, vite.config, vitest.config, eslint.config, etc.)
+- ✅ Merge package.json scripts and dependencies
+- ✅ Update .gitignore with latest patterns
+- ✅ Preserve your source code in `src/` directory
+- ✅ Keep your custom dependencies and settings
+
 ### Available Scripts
 
 - `npm run dev` - Start development server with HMR
@@ -121,30 +148,82 @@ The configuration enables all strict TypeScript checks:
 
 ## Publishing to GitHub Packages
 
-This package is designed to be published to GitHub Packages.
+This package uses **automatic versioning** based on version markers in commit messages. When you push to the `main` branch, GitHub Actions automatically bumps the version, builds, and publishes.
 
-### Setup
+### Version Markers
 
-1. Create a `.npmrc` file in your project root:
+Include `[patch]`, `[minor]`, or `[major]` in your commit message to specify the version bump:
+
+```bash
+# Patch release (1.0.0 → 1.0.1) - Bug fixes, docs, chores
+git commit -m "fix: correct template file path [patch]"
+git commit -m "docs: update README examples [patch]"
+git commit -m "chore: update dependencies [patch]"
+
+# Minor release (1.0.0 → 1.1.0) - New features
+git commit -m "feat: add update command for existing projects [minor]"
+git commit -m "Add CLI support for multiple commands [minor]"
+
+# Major release (1.0.0 → 2.0.0) - Breaking changes
+git commit -m "Breaking: change template directory structure [major]"
+git commit -m "Remove deprecated configuration options [major]"
+```
+
+### Automatic Publishing Workflow
+
+1. **Make your changes** and commit with version marker:
+   ```bash
+   git add .
+   git commit -m "feat: add new template file [minor]"
+   ```
+
+2. **Push to main branch**:
+   ```bash
+   git push origin main
+   ```
+
+3. **GitHub Actions automatically**:
+   - Detects version bump type from `[patch]`, `[minor]`, or `[major]` marker
+   - Bumps version in `package.json`
+   - Builds the package
+   - Creates a git tag (e.g., `v1.1.0`)
+   - Publishes to GitHub Packages
+   - Pushes version commit and tag back to repository
+
+**Note:** If no version marker is found, the build will fail. Always include `[patch]`, `[minor]`, or `[major]` in commits to main.
+
+### Manual Publishing (Alternative)
+
+If you prefer manual control:
+
+```bash
+# 1. Commit your changes
+git add .
+git commit -m "feat: add new feature"
+
+# 2. Manually bump version
+npm version minor  # or patch, or major
+
+# 3. Build and publish
+npm run build
+npm publish
+
+# 4. Push changes and tags
+git push && git push --tags
+```
+
+### Setup for Installation
+
+To install this package in other projects, create a `.npmrc` file:
 
 ```
 @diogo-raphael-cravo:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${GITHUB_TOKEN}
 ```
 
-**Note**: This file contains secrets and should never be committed. It's already in `.gitignore`. Use environment variables like `${GITHUB_TOKEN}` for credentials.
-
-2. Authenticate with GitHub:
+Authenticate with GitHub:
 
 ```bash
 npm login --registry=https://npm.pkg.github.com
-```
-
-3. Publish:
-
-```bash
-npm run build
-npm publish
 ```
 
 ### Using in Other Projects
