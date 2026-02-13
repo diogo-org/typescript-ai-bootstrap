@@ -279,8 +279,10 @@ function updateTemplate(
     }
   } else {
     // Check if this file should be updated
+    // Normalize to POSIX separators for cross-platform compatibility
+    const normalizedPath = currentRelativePath.split(path.sep).join('/');
     const shouldUpdate = UPDATABLE_FILES.some(pattern => 
-      currentRelativePath === pattern || currentRelativePath.endsWith(`/${pattern}`)
+      normalizedPath === pattern || normalizedPath.endsWith(`/${pattern}`)
     );
 
     if (shouldUpdate) {

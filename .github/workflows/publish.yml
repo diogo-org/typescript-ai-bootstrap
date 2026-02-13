@@ -105,6 +105,6 @@ jobs:
           ls -lah dist/
       
       - name: Publish to GitHub Packages
-        run: npm publish
+        run: npm publish --ignore-scripts
         env:
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
