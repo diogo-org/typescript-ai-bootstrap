@@ -467,7 +467,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
       // Modify a configuration file
       const tsconfigPath = path.join(testDir, 'tsconfig.json');
-      const originalTsconfig = fs.readFileSync(tsconfigPath, 'utf-8');
       fs.writeFileSync(tsconfigPath, '{"modified": true}');
 
       // Update the project

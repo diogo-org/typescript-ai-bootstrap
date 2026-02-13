@@ -6,6 +6,62 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+const UPDATABLE_FILES = [
+  'tsconfig.node.json',
+  'vite.config.ts',
+  'index.html',
+];
+
+/**
+ * Helper function to copy a directory from the main project to a target directory
+ */
+function copyDirectory(
+  sourceRelPath: string,
+  targetBaseDir: string,
+  fileCallback: (relativePath: string, absolutePath: string) => void
+): void {
+  const sourceDir = path.join(__dirname, '..', sourceRelPath);
+  const targetDir = path.join(targetBaseDir, sourceRelPath);
+  
+  if (fs.existsSync(sourceDir)) {
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+    
+    const files = fs.readdirSync(sourceDir);
+    for (const file of files) {
+      const sourcePath = path.join(sourceDir, file);
+      const targetPath = path.join(targetDir, file);
+      
+      if (fs.statSync(sourcePath).isFile()) {
+        fs.copyFileSync(sourcePath, targetPath);
+        fileCallback(`${sourceRelPath}/${file}`, targetPath);
+      }
+    }
+  }
+}
+
+/**
+ * Helper function to copy a file from the main project to a target directory
+ */
+function copyFile(
+  sourceRelPath: string,
+  targetBaseDir: string,
+  fileCallback: (relativePath: string, absolutePath: string) => void
+): void {
+  const sourceFile = path.join(__dirname, '..', sourceRelPath);
+  const targetFile = path.join(targetBaseDir, sourceRelPath);
+  
+  if (fs.existsSync(sourceFile)) {
+    const targetDirPath = path.dirname(targetFile);
+    if (!fs.existsSync(targetDirPath)) {
+      fs.mkdirSync(targetDirPath, { recursive: true });
+    }
+    fs.copyFileSync(sourceFile, targetFile);
+    fileCallback(sourceRelPath, targetFile);
+  }
+}
+
 interface InitOptions {
   projectName?: string;
   projectTitle?: string;
@@ -74,108 +130,34 @@ export async function init(options: InitOptions = {}): Promise<void> {
   try {
     copyTemplate(templateDir, targetDir, replacements);
     
-    // Copy .github/workflows from the main project
-    const sourceWorkflowsDir = path.join(__dirname, '..', '.github', 'workflows');
-    const targetWorkflowsDir = path.join(targetDir, '.github', 'workflows');
+    // Helper callback for init (logs "Created: ...")
+    const logCreated = (_relPath: string, absPath: string) => {
+      console.log(`Created: ${path.relative(process.cwd(), absPath)}`);
+    };
     
-    if (fs.existsSync(sourceWorkflowsDir)) {
-      if (!fs.existsSync(targetWorkflowsDir)) {
-        fs.mkdirSync(targetWorkflowsDir, { recursive: true });
-      }
-      
-      const workflowFiles = fs.readdirSync(sourceWorkflowsDir);
-      for (const file of workflowFiles) {
-        const sourcePath = path.join(sourceWorkflowsDir, file);
-        const targetPath = path.join(targetWorkflowsDir, file);
-        
-        if (fs.statSync(sourcePath).isFile()) {
-          fs.copyFileSync(sourcePath, targetPath);
-          console.log(`Created: ${path.relative(process.cwd(), targetPath)}`);
-        }
-      }
-    }
+    // Copy .github/workflows from the main project
+    copyDirectory('.github/workflows', targetDir, logCreated);
     
     // Copy .github/copilot-instructions.md from the main project
-    const sourceCopilotInstructions = path.join(__dirname, '..', '.github', 'copilot-instructions.md');
-    const targetCopilotInstructions = path.join(targetDir, '.github', 'copilot-instructions.md');
+    copyFile('.github/copilot-instructions.md', targetDir, logCreated);
     
-    if (fs.existsSync(sourceCopilotInstructions)) {
-      const targetGithubDir = path.join(targetDir, '.github');
-      if (!fs.existsSync(targetGithubDir)) {
-        fs.mkdirSync(targetGithubDir, { recursive: true });
-      }
-      fs.copyFileSync(sourceCopilotInstructions, targetCopilotInstructions);
-      console.log(`Created: ${path.relative(process.cwd(), targetCopilotInstructions)}`);
-    }
-        // Copy .husky directory from the main project
-    const sourceHuskyDir = path.join(__dirname, '..', '.husky');
-    const targetHuskyDir = path.join(targetDir, '.husky');
-    
-    if (fs.existsSync(sourceHuskyDir)) {
-      if (!fs.existsSync(targetHuskyDir)) {
-        fs.mkdirSync(targetHuskyDir, { recursive: true });
-      }
-      
-      const huskyFiles = fs.readdirSync(sourceHuskyDir);
-      for (const file of huskyFiles) {
-        const sourcePath = path.join(sourceHuskyDir, file);
-        const targetPath = path.join(targetHuskyDir, file);
-        
-        if (fs.statSync(sourcePath).isFile()) {
-          fs.copyFileSync(sourcePath, targetPath);
-          console.log(`Created: ${path.relative(process.cwd(), targetPath)}`);
-        }
-      }
-    }
+    // Copy .husky directory from the main project
+    copyDirectory('.husky', targetDir, logCreated);
 
     // Copy eslint.config.js from the main project
-    const sourceEslintConfig = path.join(__dirname, '..', 'eslint.config.js');
-    const targetEslintConfig = path.join(targetDir, 'eslint.config.js');
-    
-    if (fs.existsSync(sourceEslintConfig)) {
-      fs.copyFileSync(sourceEslintConfig, targetEslintConfig);
-      console.log(`Created: ${path.relative(process.cwd(), targetEslintConfig)}`);
-    }
+    copyFile('eslint.config.js', targetDir, logCreated);
 
     // Copy vitest.config.ts from the main project
-    const sourceVitestConfig = path.join(__dirname, '..', 'vitest.config.ts');
-    const targetVitestConfig = path.join(targetDir, 'vitest.config.ts');
-    
-    if (fs.existsSync(sourceVitestConfig)) {
-      fs.copyFileSync(sourceVitestConfig, targetVitestConfig);
-      console.log(`Created: ${path.relative(process.cwd(), targetVitestConfig)}`);
-    }
+    copyFile('vitest.config.ts', targetDir, logCreated);
 
     // Copy tsconfig.json from the main project
-    const sourceTsconfig = path.join(__dirname, '..', 'tsconfig.json');
-    const targetTsconfig = path.join(targetDir, 'tsconfig.json');
-    
-    if (fs.existsSync(sourceTsconfig)) {
-      fs.copyFileSync(sourceTsconfig, targetTsconfig);
-      console.log(`Created: ${path.relative(process.cwd(), targetTsconfig)}`);
-    }
+    copyFile('tsconfig.json', targetDir, logCreated);
 
     // Copy src/test.setup.ts from the main project
-    const sourceTestSetup = path.join(__dirname, '..', 'src', 'test.setup.ts');
-    const targetTestSetup = path.join(targetDir, 'src', 'test.setup.ts');
-    
-    if (fs.existsSync(sourceTestSetup)) {
-      const targetSrcDir = path.join(targetDir, 'src');
-      if (!fs.existsSync(targetSrcDir)) {
-        fs.mkdirSync(targetSrcDir, { recursive: true });
-      }
-      fs.copyFileSync(sourceTestSetup, targetTestSetup);
-      console.log(`Created: ${path.relative(process.cwd(), targetTestSetup)}`);
-    }
+    copyFile('src/test.setup.ts', targetDir, logCreated);
 
     // Copy .gitignore from the main project
-    const sourceGitignore = path.join(__dirname, '..', '.gitignore');
-    const targetGitignore = path.join(targetDir, '.gitignore');
-    
-    if (fs.existsSync(sourceGitignore)) {
-      fs.copyFileSync(sourceGitignore, targetGitignore);
-      console.log(`Created: ${path.relative(process.cwd(), targetGitignore)}`);
-    }
+    copyFile('.gitignore', targetDir, logCreated);
     
     console.log('\n✅ Project initialized successfully!');
     console.log('\nNext steps:');
@@ -194,16 +176,6 @@ export async function init(options: InitOptions = {}): Promise<void> {
     throw error;
   }
 }
-
-/**
- * Files that should be updated during an update operation
- * (configuration files, not user code)
- */
-const UPDATABLE_FILES = [
-  'tsconfig.node.json',
-  'vite.config.ts',
-  'index.html',
-];
 
 /**
  * Selectively copy only updatable files from template
@@ -329,96 +301,31 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
       updatedFiles.push('package.json');
     }
 
-    // Copy .github/workflows from the main project
-    const sourceWorkflowsDir = path.join(__dirname, '..', '.github', 'workflows');
-    const targetWorkflowsDir = path.join(targetDir, '.github', 'workflows');
+    // Helper callback for update (adds to updatedFiles array)
+    const trackUpdated = (relPath: string, _absPath: string) => {
+      updatedFiles.push(relPath);
+    };
     
-    if (fs.existsSync(sourceWorkflowsDir)) {
-      if (!fs.existsSync(targetWorkflowsDir)) {
-        fs.mkdirSync(targetWorkflowsDir, { recursive: true });
-      }
-      
-      const workflowFiles = fs.readdirSync(sourceWorkflowsDir);
-      for (const file of workflowFiles) {
-        const sourcePath = path.join(sourceWorkflowsDir, file);
-        const targetPath = path.join(targetWorkflowsDir, file);
-        
-        if (fs.statSync(sourcePath).isFile()) {
-          fs.copyFileSync(sourcePath, targetPath);
-          updatedFiles.push(`.github/workflows/${file}`);
-        }
-      }
-    }
+    // Copy .github/workflows from the main project
+    copyDirectory('.github/workflows', targetDir, trackUpdated);
 
     // Copy .github/copilot-instructions.md from the main project
-    const sourceCopilotInstructions = path.join(__dirname, '..', '.github', 'copilot-instructions.md');
-    const targetCopilotInstructions = path.join(targetDir, '.github', 'copilot-instructions.md');
-    
-    if (fs.existsSync(sourceCopilotInstructions)) {
-      const targetGithubDir = path.join(targetDir, '.github');
-      if (!fs.existsSync(targetGithubDir)) {
-        fs.mkdirSync(targetGithubDir, { recursive: true });
-      }
-      fs.copyFileSync(sourceCopilotInstructions, targetCopilotInstructions);
-      updatedFiles.push('.github/copilot-instructions.md');
-    }
+    copyFile('.github/copilot-instructions.md', targetDir, trackUpdated);
 
     // Copy .husky directory from the main project
-    const sourceHuskyDir = path.join(__dirname, '..', '.husky');
-    const targetHuskyDir = path.join(targetDir, '.husky');
-    
-    if (fs.existsSync(sourceHuskyDir)) {
-      if (!fs.existsSync(targetHuskyDir)) {
-        fs.mkdirSync(targetHuskyDir, { recursive: true });
-      }
-      
-      const huskyFiles = fs.readdirSync(sourceHuskyDir);
-      for (const file of huskyFiles) {
-        const sourcePath = path.join(sourceHuskyDir, file);
-        const targetPath = path.join(targetHuskyDir, file);
-        
-        if (fs.statSync(sourcePath).isFile()) {
-          fs.copyFileSync(sourcePath, targetPath);
-          updatedFiles.push(`.husky/${file}`);
-        }
-      }
-    }
+    copyDirectory('.husky', targetDir, trackUpdated);
 
     // Copy eslint.config.js from the main project
-    const sourceEslintConfig = path.join(__dirname, '..', 'eslint.config.js');
-    const targetEslintConfig = path.join(targetDir, 'eslint.config.js');
-    
-    if (fs.existsSync(sourceEslintConfig)) {
-      fs.copyFileSync(sourceEslintConfig, targetEslintConfig);
-      updatedFiles.push('eslint.config.js');
-    }
+    copyFile('eslint.config.js', targetDir, trackUpdated);
 
     // Copy vitest.config.ts from the main project
-    const sourceVitestConfig = path.join(__dirname, '..', 'vitest.config.ts');
-    const targetVitestConfig = path.join(targetDir, 'vitest.config.ts');
-    
-    if (fs.existsSync(sourceVitestConfig)) {
-      fs.copyFileSync(sourceVitestConfig, targetVitestConfig);
-      updatedFiles.push('vitest.config.ts');
-    }
+    copyFile('vitest.config.ts', targetDir, trackUpdated);
 
     // Copy tsconfig.json from the main project
-    const sourceTsconfig = path.join(__dirname, '..', 'tsconfig.json');
-    const targetTsconfig = path.join(targetDir, 'tsconfig.json');
-    
-    if (fs.existsSync(sourceTsconfig)) {
-      fs.copyFileSync(sourceTsconfig, targetTsconfig);
-      updatedFiles.push('tsconfig.json');
-    }
+    copyFile('tsconfig.json', targetDir, trackUpdated);
 
     // Copy .gitignore from the main project
-    const sourceGitignore = path.join(__dirname, '..', '.gitignore');
-    const targetGitignore = path.join(targetDir, '.gitignore');
-    
-    if (fs.existsSync(sourceGitignore)) {
-      fs.copyFileSync(sourceGitignore, targetGitignore);
-      updatedFiles.push('.gitignore');
-    }
+    copyFile('.gitignore', targetDir, trackUpdated);
 
     console.log('✅ Updated files:');
     updatedFiles.forEach(file => console.log(`   - ${file}`));

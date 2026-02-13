@@ -24,6 +24,33 @@ function printStatus(passed, message) {
 
 console.log('🔍 Running pre-commit checks...\n');
 
+// Step 0: Verify package-lock.json is in sync
+console.log('Step 0: Verifying package-lock.json...');
+try {
+  // Check if package-lock.json exists
+  if (!fs.existsSync('package-lock.json')) {
+    printStatus(false, 'package-lock.json not found');
+    log(colors.yellow, '\n💡 Run "npm install" to generate package-lock.json');
+    log(colors.red, '\n❌ Commit aborted: package-lock.json is required for CI');
+    process.exit(1);
+  }
+
+  // Verify npm ci would work (validates package-lock.json is in sync)
+  execSync('npm ci --dry-run', { 
+    stdio: 'pipe',
+    encoding: 'utf-8'
+  });
+  
+  printStatus(true, 'package-lock.json is valid and in sync');
+} catch (error) {
+  printStatus(false, 'package-lock.json validation failed');
+  console.log(error.stdout?.toString().slice(-1000) || error.stderr?.toString().slice(-1000) || '');
+  log(colors.yellow, '\n💡 Run "npm install" to fix package-lock.json');
+  log(colors.red, '\n❌ Commit aborted: package-lock.json must be valid for npm ci to work in CI');
+  process.exit(1);
+}
+console.log('');
+
 // Step 1: Run ESLint
 console.log('Step 1: Running ESLint...');
 try {
@@ -123,10 +150,10 @@ console.log('');
 // Step 4: Check for secrets
 console.log('Step 4: Checking for secrets...');
 try {
-  // Get list of staged files
+  // Get list of staged files (excluding .husky directory to avoid false positives)
   const stagedFiles = execSync('git diff --cached --name-only', {
     encoding: 'utf-8'
-  }).trim().split('\n').filter(f => f);
+  }).trim().split('\n').filter(f => f && !f.startsWith('.husky/'));
 
   const secretPatterns = [
     { regex: /_authToken=.+/i, description: 'Auth token' },
