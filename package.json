@@ -12,6 +12,7 @@
     "dist",
     "templates",
     "bin",
+    "scripts",
     ".github",
     ".husky",
     "eslint.config.js",
@@ -28,7 +29,7 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "prepare": "[ -z \"$CI\" ] && husky install || true"
+    "prepare": "node scripts/prepare.cjs"
   },
   "keywords": [
     "typescript",
