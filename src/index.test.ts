@@ -383,13 +383,12 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       });
 
       const mainTsPath = path.join(testDir, 'src', 'main.ts');
-      const indexHtmlPath = path.join(testDir, 'index.html');
 
       expect(fs.existsSync(mainTsPath), 'main.ts should exist for typescript template').toBe(true);
       
-      const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
-      expect(indexHtml).toContain('src="/src/main.ts"');
-      expect(indexHtml).not.toContain('main.tsx');
+      // TypeScript template is not a web app, so no index.html
+      const indexHtmlPath = path.join(testDir, 'index.html');
+      expect(fs.existsSync(indexHtmlPath), 'index.html should not exist for typescript template').toBe(false);
     });
 
     it('should create main.tsx for react template', async () => {
@@ -943,6 +942,288 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(packageJson.dependencies).toHaveProperty('react');
       expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
       expect(packageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should update ALL relevant files when update command runs', async () => {
+      // Create a React project
+      await init({
+        projectName: 'comprehensive-update-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Simulate old/modified versions of ALL updatable files
+      const filesToModify = [
+        // UPDATABLE_FILES from template
+        { path: 'tsconfig.node.json', content: '{"old": "node-config"}' },
+        { path: 'tsconfig.json', content: '{"old": "tsconfig"}' },
+        { path: 'vite.config.ts', content: '// old vite config' },
+        { path: 'vitest.config.ts', content: '// old vitest config' },
+        { path: 'index.html', content: '<html><body>old</body></html>' },
+        // Files copied from main project
+        { path: 'eslint.config.js', content: '// old eslint config' },
+        { path: '.gitignore', content: '# old gitignore' },
+        { path: '.github/copilot-instructions.md', content: '# old copilot instructions' },
+        { path: '.github/workflows/ci.yml', content: '# old ci workflow' },
+        { path: '.github/workflows/build.yml', content: '# old build workflow' },
+        { path: '.husky/pre-commit', content: '# old pre-commit hook' },
+        { path: '.husky/pre-commit.cjs', content: '// old pre-commit script' },
+      ];
+
+      // Modify all files
+      for (const file of filesToModify) {
+        const filePath = path.join(testDir, file.path);
+        fs.writeFileSync(filePath, file.content, 'utf-8');
+      }
+
+      // Also modify package.json to add custom field
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      packageJson.customField = 'should-be-preserved';
+      packageJson.scripts['custom-script'] = 'echo custom';
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Run update
+      await update({ targetDir: testDir });
+
+      // Verify ALL files are updated
+      // 1. tsconfig.node.json should be updated
+      const tsconfigNodeContent = fs.readFileSync(path.join(testDir, 'tsconfig.node.json'), 'utf-8');
+      expect(tsconfigNodeContent).not.toContain('"old": "node-config"');
+      expect(tsconfigNodeContent).toContain('compilerOptions');
+
+      // 2. tsconfig.json should be updated
+      const tsconfigContent = fs.readFileSync(path.join(testDir, 'tsconfig.json'), 'utf-8');
+      expect(tsconfigContent).not.toContain('"old": "tsconfig"');
+      expect(tsconfigContent).toContain('compilerOptions');
+
+      // 3. vite.config.ts should be updated
+      const viteConfigContent = fs.readFileSync(path.join(testDir, 'vite.config.ts'), 'utf-8');
+      expect(viteConfigContent).not.toBe('// old vite config');
+      expect(viteConfigContent).toContain('defineConfig');
+
+      // 4. vitest.config.ts should be updated
+      const vitestConfigContent = fs.readFileSync(path.join(testDir, 'vitest.config.ts'), 'utf-8');
+      expect(vitestConfigContent).not.toBe('// old vitest config');
+      expect(vitestConfigContent).toContain('vitest');
+
+      // 5. index.html should be updated
+      const indexHtmlContent = fs.readFileSync(path.join(testDir, 'index.html'), 'utf-8');
+      expect(indexHtmlContent).not.toBe('<html><body>old</body></html>');
+      expect(indexHtmlContent).toContain('comprehensive-update-test');
+
+      // 6. eslint.config.js should be updated
+      const eslintContent = fs.readFileSync(path.join(testDir, 'eslint.config.js'), 'utf-8');
+      expect(eslintContent).not.toBe('// old eslint config');
+      expect(eslintContent).toContain('eslint');
+
+      // 7. .gitignore should be updated
+      const gitignoreContent = fs.readFileSync(path.join(testDir, '.gitignore'), 'utf-8');
+      expect(gitignoreContent).not.toBe('# old gitignore');
+      expect(gitignoreContent).toContain('node_modules');
+
+      // 8. .github/copilot-instructions.md should be updated
+      const copilotContent = fs.readFileSync(path.join(testDir, '.github/copilot-instructions.md'), 'utf-8');
+      expect(copilotContent).not.toBe('# old copilot instructions');
+      expect(copilotContent).toContain('Copilot Instructions');
+
+      // 9. .github/workflows/ci.yml should be updated
+      const ciContent = fs.readFileSync(path.join(testDir, '.github/workflows/ci.yml'), 'utf-8');
+      expect(ciContent).not.toBe('# old ci workflow');
+      expect(ciContent).toContain('npm run lint');
+
+      // 10. .github/workflows/build.yml should be updated
+      const buildContent = fs.readFileSync(path.join(testDir, '.github/workflows/build.yml'), 'utf-8');
+      expect(buildContent).not.toBe('# old build workflow');
+      expect(buildContent).toContain('npm run build');
+
+      // 11. .husky/pre-commit should be updated
+      const preCommitContent = fs.readFileSync(path.join(testDir, '.husky/pre-commit'), 'utf-8');
+      expect(preCommitContent).not.toBe('# old pre-commit hook');
+      expect(preCommitContent).toContain('pre-commit');
+
+      // 12. .husky/pre-commit.cjs should be updated
+      const preCommitCjsContent = fs.readFileSync(path.join(testDir, '.husky/pre-commit.cjs'), 'utf-8');
+      expect(preCommitCjsContent).not.toBe('// old pre-commit script');
+      expect(preCommitCjsContent).toContain('lint');
+
+      // 13. package.json should be updated BUT preserve custom fields
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.customField).toBe('should-be-preserved');
+      expect(updatedPackageJson.scripts['custom-script']).toBe('echo custom');
+      expect(updatedPackageJson.scripts.dev).toBeDefined();
+      expect(updatedPackageJson.scripts.build).toBeDefined();
+      expect(updatedPackageJson.scripts.test).toBeDefined();
+
+      // 14. Verify publish.yml is NOT copied (bootstrap-specific)
+      const publishYmlPath = path.join(testDir, '.github/workflows/publish.yml');
+      expect(fs.existsSync(publishYmlPath)).toBe(false);
+
+      // 15. Verify src/test.setup.ts is NOT updated (to preserve user customizations)
+      // Add a custom modification to test.setup.ts first
+      const testSetupPath = path.join(testDir, 'src/test.setup.ts');
+      const originalTestSetup = fs.readFileSync(testSetupPath, 'utf-8');
+      const modifiedTestSetup = originalTestSetup + '\n// Custom user modification';
+      fs.writeFileSync(testSetupPath, modifiedTestSetup);
+
+      // Run update again
+      await update({ targetDir: testDir });
+
+      // Verify custom modification is still there
+      const finalTestSetup = fs.readFileSync(testSetupPath, 'utf-8');
+      expect(finalTestSetup).toContain('// Custom user modification');
+    });
+
+    it('should update ALL relevant files for TypeScript template project', async () => {
+      // Create a TypeScript project (not React)
+      await init({
+        projectName: 'comprehensive-typescript-update-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      // Simulate old/modified versions of ALL updatable files
+      const filesToModify = [
+        { path: 'tsconfig.node.json', content: '{"old": "node-config"}' },
+        { path: 'tsconfig.json', content: '{"old": "tsconfig"}' },
+        { path: 'vite.config.ts', content: '// old vite config' },
+        { path: 'vitest.config.ts', content: '// old vitest config' },
+        { path: 'eslint.config.js', content: '// old eslint config' },
+        { path: '.gitignore', content: '# old gitignore' },
+      ];
+
+      // Modify all files
+      for (const file of filesToModify) {
+        const filePath = path.join(testDir, file.path);
+        fs.writeFileSync(filePath, file.content, 'utf-8');
+      }
+
+      // Run update
+      await update({ targetDir: testDir });
+
+      // Verify ALL files are updated
+      const tsconfigNodeContent = fs.readFileSync(path.join(testDir, 'tsconfig.node.json'), 'utf-8');
+      expect(tsconfigNodeContent).toContain('compilerOptions');
+
+      const tsconfigContent = fs.readFileSync(path.join(testDir, 'tsconfig.json'), 'utf-8');
+      expect(tsconfigContent).toContain('compilerOptions');
+
+      const viteConfigContent = fs.readFileSync(path.join(testDir, 'vite.config.ts'), 'utf-8');
+      expect(viteConfigContent).toContain('defineConfig');
+
+      const vitestConfigContent = fs.readFileSync(path.join(testDir, 'vitest.config.ts'), 'utf-8');
+      expect(vitestConfigContent).toContain('vitest');
+
+      const eslintContent = fs.readFileSync(path.join(testDir, 'eslint.config.js'), 'utf-8');
+      expect(eslintContent).toContain('eslint');
+
+      const gitignoreContent = fs.readFileSync(path.join(testDir, '.gitignore'), 'utf-8');
+      expect(gitignoreContent).toContain('node_modules');
+
+      // Verify TypeScript template does NOT have index.html
+      const indexHtmlPath = path.join(testDir, 'index.html');
+      expect(fs.existsSync(indexHtmlPath)).toBe(false);
+
+      // Verify package.json still identifies as TypeScript template
+      const packageJson = JSON.parse(fs.readFileSync(path.join(testDir, 'package.json'), 'utf-8'));
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+      expect(packageJson.dependencies).toBeUndefined(); // No React deps
+    });
+
+    it('should verify UPDATABLE_FILES constant matches actual update behavior', async () => {
+      // This test ensures documentation matches implementation
+      const expectedUpdatableFiles = [
+        'tsconfig.node.json',
+        'tsconfig.json',
+        'vite.config.ts',
+        'vitest.config.ts',
+        'index.html',
+      ];
+
+      // Create a project
+      await init({
+        projectName: 'updatable-files-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Modify all expected updatable files
+      for (const file of expectedUpdatableFiles) {
+        const filePath = path.join(testDir, file);
+        if (fs.existsSync(filePath)) {
+          fs.writeFileSync(filePath, `// MODIFIED: ${file}`, 'utf-8');
+        }
+      }
+
+      // Modify a file that should NOT be updatable
+      const mainTsxPath = path.join(testDir, 'src/main.tsx');
+      const originalMainTsx = fs.readFileSync(mainTsxPath, 'utf-8');
+      fs.writeFileSync(mainTsxPath, originalMainTsx + '\n// USER MODIFICATION');
+
+      // Run update
+      await update({ targetDir: testDir });
+
+      // Verify all UPDATABLE_FILES were updated
+      for (const file of expectedUpdatableFiles) {
+        const filePath = path.join(testDir, file);
+        if (fs.existsSync(filePath)) {
+          const content = fs.readFileSync(filePath, 'utf-8');
+          expect(content).not.toContain(`// MODIFIED: ${file}`);
+        }
+      }
+
+      // Verify user code was NOT updated
+      const finalMainTsx = fs.readFileSync(mainTsxPath, 'utf-8');
+      expect(finalMainTsx).toContain('// USER MODIFICATION');
+    });
+
+    it('should throw error when updating project with corrupted template directory', async () => {
+      // Create a project first
+      await init({
+        projectName: 'corrupted-template-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Modify package.json to reference a non-existent template
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      packageJson.typescriptBootstrap = { template: 'non-existent-template' };
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Update should throw error about missing template
+      await expect(update({ targetDir: testDir })).rejects.toThrow(/Template "non-existent-template" not found/);
+    });
+
+    it('should handle error during init gracefully', async () => {
+      // Try to initialize with an invalid template that will cause an error
+      await expect(init({
+        projectName: 'error-test',
+        targetDir: testDir,
+        template: 'invalid' as any,
+      })).rejects.toThrow(/Invalid template/);
+    });
+
+    it('should create nested directories during update if they don\'t exist', async () => {
+      // Create a minimal project
+      await init({
+        projectName: 'nested-dir-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      // Remove a deeply nested file to force directory creation during update
+      const huskyNestedPath = path.join(testDir, '.husky', '_');
+      if (fs.existsSync(huskyNestedPath)) {
+        fs.rmSync(huskyNestedPath, { recursive: true, force: true });
+      }
+
+      // Update should recreate the directory structure
+      await update({ targetDir: testDir });
+
+      // Verify nested directory was recreated
+      expect(fs.existsSync(huskyNestedPath)).toBe(true);
+      expect(fs.existsSync(path.join(huskyNestedPath, 'husky.sh'))).toBe(true);
     });
   });
 });

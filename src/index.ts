@@ -13,10 +13,8 @@ const UPDATABLE_FILES = [
   'vite.config.ts',
   'vitest.config.ts',
   'index.html',
-  // Root project configuration files (copied from main project root)
-  '.gitignore',
-  'eslint.config.js',
   // Note: src/test.setup.ts is intentionally NOT updatable to preserve user customizations
+  // Note: .gitignore and eslint.config.js are copied separately from root via copyFile()
 ];
 
 /**
@@ -28,6 +26,10 @@ function copyWorkflows(
 ): void {
   const sourceDir = path.join(__dirname, '..', '.github', 'workflows');
   const targetDir = path.join(targetBaseDir, '.github', 'workflows');
+  
+  if (!fs.existsSync(sourceDir)) {
+    return;
+  }
   
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
@@ -117,6 +119,33 @@ interface UpdateOptions {
 }
 
 /**
+ * Helper to process file content with placeholder replacements
+ */
+function processFileContent(
+  templatePath: string,
+  targetPath: string,
+  replacements: Record<string, string>,
+  ensureDir = false
+): void {
+  let content = fs.readFileSync(templatePath, 'utf-8');
+  
+  // Replace placeholders
+  for (const [key, value] of Object.entries(replacements)) {
+    content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
+  }
+
+  // Ensure target directory exists if requested
+  if (ensureDir) {
+    const targetDir = path.dirname(targetPath);
+    if (!fs.existsSync(targetDir)) {
+      fs.mkdirSync(targetDir, { recursive: true });
+    }
+  }
+
+  fs.writeFileSync(targetPath, content, 'utf-8');
+}
+
+/**
  * Copy template files to target directory, replacing placeholders
  */
 function copyTemplate(
@@ -139,14 +168,7 @@ function copyTemplate(
       );
     }
   } else {
-    let content = fs.readFileSync(templatePath, 'utf-8');
-    
-    // Replace placeholders
-    for (const [key, value] of Object.entries(replacements)) {
-      content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
-    }
-
-    fs.writeFileSync(targetPath, content, 'utf-8');
+    processFileContent(templatePath, targetPath, replacements);
     console.log(`Created: ${path.relative(process.cwd(), targetPath)}`);
   }
 }
@@ -245,12 +267,11 @@ function updateTemplate(
         continue;
       }
 
-      const targetFile = file === '_gitignore' ? '.gitignore' : file;
-      const newRelativePath = relativePath ? path.join(relativePath, targetFile) : targetFile;
+      const newRelativePath = relativePath ? path.join(relativePath, file) : file;
       
       const updated = updateTemplate(
         path.join(templatePath, file),
-        path.join(targetPath, targetFile),
+        path.join(targetPath, file),
         replacements,
         newRelativePath
       );
@@ -263,20 +284,7 @@ function updateTemplate(
     );
 
     if (shouldUpdate) {
-      let content = fs.readFileSync(templatePath, 'utf-8');
-      
-      // Replace placeholders
-      for (const [key, value] of Object.entries(replacements)) {
-        content = content.replace(new RegExp(`{{${key}}}`, 'g'), value);
-      }
-
-      // Ensure target directory exists
-      const targetDir = path.dirname(targetPath);
-      if (!fs.existsSync(targetDir)) {
-        fs.mkdirSync(targetDir, { recursive: true });
-      }
-
-      fs.writeFileSync(targetPath, content, 'utf-8');
+      processFileContent(templatePath, targetPath, replacements, true);
       updatedFiles.push(currentRelativePath);
     }
   }
