@@ -84,8 +84,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const workflowsDir = path.join(testDir, '.github', 'workflows');
       expect(fs.existsSync(workflowsDir)).toBe(true);
       
-      // Check that workflows are copied
-      const expectedWorkflows = ['ci.yml', 'publish.yml'];
+      // Check that workflows are copied (excluding publish.yml which is bootstrap-specific)
+      const expectedWorkflows = ['ci.yml', 'build.yml'];
       for (const workflow of expectedWorkflows) {
         const workflowPath = path.join(workflowsDir, workflow);
         expect(fs.existsSync(workflowPath), `${workflow} should exist in .github/workflows`).toBe(true);
@@ -456,7 +456,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(mainWorkflowsPath), '.github/workflows should exist in the main project').toBe(true);
       
       // Check that it has the expected workflow files
-      const expectedWorkflows = ['ci.yml', 'publish.yml'];
+      const expectedWorkflows = ['ci.yml', 'build.yml', 'publish.yml'];
       for (const workflow of expectedWorkflows) {
         const workflowPath = path.join(mainWorkflowsPath, workflow);
         expect(fs.existsSync(workflowPath), `${workflow} should exist in .github/workflows`).toBe(true);
@@ -646,10 +646,11 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Update the project
       await update({ targetDir: testDir });
 
-      // Verify workflows are copied
+      // Verify workflows are copied (excluding publish.yml)
       expect(fs.existsSync(workflowsDir)).toBe(true);
       expect(fs.existsSync(path.join(workflowsDir, 'ci.yml'))).toBe(true);
-      expect(fs.existsSync(path.join(workflowsDir, 'publish.yml'))).toBe(true);
+      expect(fs.existsSync(path.join(workflowsDir, 'build.yml'))).toBe(true);
+      expect(fs.existsSync(path.join(workflowsDir, 'publish.yml'))).toBe(false);
 
       // Verify content is from main project
       const ciContent = fs.readFileSync(path.join(workflowsDir, 'ci.yml'), 'utf-8');
@@ -851,10 +852,12 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Update should work and create .github directory
       await update({ targetDir: testDir });
 
-      // Verify .github/workflows was created
+      // Verify .github/workflows was created (excluding publish.yml)
       const workflowsDir = path.join(testDir, '.github', 'workflows');
       expect(fs.existsSync(workflowsDir)).toBe(true);
       expect(fs.existsSync(path.join(workflowsDir, 'ci.yml'))).toBe(true);
+      expect(fs.existsSync(path.join(workflowsDir, 'build.yml'))).toBe(true);
+      expect(fs.existsSync(path.join(workflowsDir, 'publish.yml'))).toBe(false);
 
       // Verify .github/copilot-instructions.md was created
       const copilotPath = path.join(testDir, '.github', 'copilot-instructions.md');

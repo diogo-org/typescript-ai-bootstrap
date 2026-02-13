@@ -7,17 +7,48 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const UPDATABLE_FILES = [
-  // Template-specific configuration files
+  // Template-specific configuration files (copied from templates/)
   'tsconfig.node.json',
-  'vite.config.ts',
-  'index.html',
-  // Root project configuration files (copied from main project)
   'tsconfig.json',
+  'vite.config.ts',
   'vitest.config.ts',
+  'index.html',
+  // Root project configuration files (copied from main project root)
   '.gitignore',
   'eslint.config.js',
   // Note: src/test.setup.ts is intentionally NOT updatable to preserve user customizations
 ];
+
+/**
+ * Helper function to copy workflows from the main project, excluding publish.yml
+ */
+function copyWorkflows(
+  targetBaseDir: string,
+  fileCallback: (relativePath: string, absolutePath: string) => void
+): void {
+  const sourceDir = path.join(__dirname, '..', '.github', 'workflows');
+  const targetDir = path.join(targetBaseDir, '.github', 'workflows');
+  
+  if (!fs.existsSync(targetDir)) {
+    fs.mkdirSync(targetDir, { recursive: true });
+  }
+  
+  const files = fs.readdirSync(sourceDir);
+  for (const file of files) {
+    // Skip publish.yml as it's specific to the bootstrap package
+    if (file === 'publish.yml') continue;
+    
+    const sourcePath = path.join(sourceDir, file);
+    const targetPath = path.join(targetDir, file);
+    const relPath = `.github/workflows/${file}`;
+    
+    const stat = fs.statSync(sourcePath);
+    if (stat.isFile()) {
+      fs.copyFileSync(sourcePath, targetPath);
+      fileCallback(relPath, targetPath);
+    }
+  }
+}
 
 /**
  * Helper function to copy a directory from the main project to a target directory
@@ -157,8 +188,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
       console.log(`Created: ${path.relative(process.cwd(), absPath)}`);
     };
     
-    // Copy .github/workflows from the main project
-    copyDirectory('.github/workflows', targetDir, logCreated);
+    // Copy .github/workflows from the main project (excluding publish.yml)
+    copyWorkflows(targetDir, logCreated);
     
     // Copy .github/copilot-instructions.md from the main project
     copyFile('.github/copilot-instructions.md', targetDir, logCreated);
@@ -168,9 +199,6 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, logCreated);
-
-    // Copy tsconfig.json from the main project
-    copyFile('tsconfig.json', targetDir, logCreated);
 
     // Copy src/test.setup.ts from the main project
     copyFile('src/test.setup.ts', targetDir, logCreated);
@@ -356,8 +384,8 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
       updatedFiles.push(relPath);
     };
     
-    // Copy .github/workflows from the main project
-    copyDirectory('.github/workflows', targetDir, trackUpdated);
+    // Copy .github/workflows from the main project (excluding publish.yml)
+    copyWorkflows(targetDir, trackUpdated);
 
     // Copy .github/copilot-instructions.md from the main project
     copyFile('.github/copilot-instructions.md', targetDir, trackUpdated);
@@ -367,9 +395,6 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
     // Copy eslint.config.js from the main project
     copyFile('eslint.config.js', targetDir, trackUpdated);
-
-    // Copy tsconfig.json from the main project
-    copyFile('tsconfig.json', targetDir, trackUpdated);
 
     // Note: src/test.setup.ts is NOT copied during update to preserve user customizations
     // It is only created during init and users can modify it as needed
