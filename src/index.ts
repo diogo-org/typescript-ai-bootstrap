@@ -66,6 +66,7 @@ interface InitOptions {
   projectName?: string;
   projectTitle?: string;
   targetDir?: string;
+  template?: 'typescript' | 'react';
 }
 
 interface UpdateOptions {
@@ -117,10 +118,22 @@ export async function init(options: InitOptions = {}): Promise<void> {
   const projectName = options.projectName || path.basename(process.cwd());
   const projectTitle = options.projectTitle || projectName;
   const targetDir = options.targetDir || process.cwd();
+  const template = options.template || 'react';
+
+  // Validate template type
+  const validTemplates = ['typescript', 'react'];
+  if (!validTemplates.includes(template)) {
+    throw new Error(`Invalid template: ${template}. Valid options: ${validTemplates.join(', ')}`);
+  }
 
   console.log(`\n🚀 Initializing TypeScript Bootstrap for: ${projectName}\n`);
 
-  const templateDir = path.join(__dirname, '..', 'templates');
+  const templateDir = path.join(__dirname, '..', 'templates', template);
+  
+  // Verify template directory exists
+  if (!fs.existsSync(templateDir)) {
+    throw new Error(`Template directory not found: ${templateDir}`);
+  }
   
   const replacements = {
     PROJECT_NAME: projectName,
@@ -280,10 +293,11 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
   const projectName = packageJson.name || path.basename(targetDir);
   const projectTitle = packageJson.description || projectName;
+  const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility
 
   console.log(`\n🔄 Updating TypeScript Bootstrap project: ${projectName}\n`);
 
-  const templateDir = path.join(__dirname, '..', 'templates');
+  const templateDir = path.join(__dirname, '..', 'templates', template);
   
   const replacements = {
     PROJECT_NAME: projectName,

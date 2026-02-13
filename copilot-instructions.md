@@ -4,6 +4,36 @@
 
 This is a reusable npm package that provides high-quality TypeScript project scaffolding. It extracts the best practices and tooling configuration from real-world projects to create a standardized, AI-friendly development environment.
 
+## Architecture Principles
+
+### #0 Rule: Self-Dogfooding Architecture - CRITICAL ⚠️
+
+**This project uses its own configurations before distributing them to generated projects.**
+
+**Why:** We want this project's settings, scripts, and configurations to be **identical** to those in generated projects, so we test these settings in:
+- Unit tests (npm test)
+- Feature tests (project initialization)
+- Deployment environment (CI/CD workflows)
+
+**Before** replicating configurations to other projects via `init()` and `update()`.
+
+**Implementation:**
+- All shared configs live in the **root** (`.github/`, `.husky/`, `eslint.config.js`, `vitest.config.ts`, `tsconfig.json`, `src/test.setup.ts`, `.gitignore`)
+- These files are **copied at runtime** during `init()` and `update()`
+- Root `package.json` must include these directories in `"files"` array for npm publishing
+- Tests verify these files are NOT duplicated in `templates/` directory
+
+**DO NOT:**
+- ❌ Move config files into `templates/` to avoid publishing them separately
+- ❌ Create separate configs for the tool vs generated projects
+- ❌ Skip testing configs before distributing them
+
+**DO:**
+- ✅ Keep one source of truth in the root
+- ✅ Test configs in this project first
+- ✅ Include required directories in `package.json` `"files"` array
+- ✅ Copy from root at runtime using `copyFile()` and `copyDirectory()` helpers
+
 ## Core Philosophy
 
 1. **Quality First**: Enforce strict standards through automation

@@ -4,6 +4,14 @@ import * as path from 'path';
 import * as os from 'os';
 import { init, update } from './index.js';
 
+/**
+ * Helper to read package.json from test directory
+ */
+function readPackageJson(testDir: string) {
+  const packageJsonPath = path.join(testDir, 'package.json');
+  return JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+}
+
 describe('TypeScript Bootstrap - Feature Tests', () => {
   let testDir: string;
 
@@ -321,6 +329,111 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
           targetDir: testDir,
         });
       }).not.toThrow();
+    });
+  });
+
+  describe('Template Types', () => {
+    it('should initialize with react template by default', async () => {
+      await init({
+        projectName: 'default-template-test',
+        targetDir: testDir,
+      });
+
+      const packageJson = readPackageJson(testDir);
+
+      // React template should have React dependencies
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.dependencies).toHaveProperty('react-dom');
+      expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
+    });
+
+    it('should initialize with typescript template when specified', async () => {
+      await init({
+        projectName: 'typescript-template-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJson = readPackageJson(testDir);
+
+      // TypeScript template should NOT have React dependencies
+      expect(packageJson.dependencies).toBeUndefined();
+      expect(packageJson.devDependencies).not.toHaveProperty('@vitejs/plugin-react');
+      
+      // Should have TypeScript essentials
+      expect(packageJson.devDependencies).toHaveProperty('typescript');
+      expect(packageJson.devDependencies).toHaveProperty('vite');
+      expect(packageJson.devDependencies).toHaveProperty('vitest');
+    });
+
+    it('should initialize with react template when specified', async () => {
+      await init({
+        projectName: 'react-template-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      const packageJson = readPackageJson(testDir);
+
+      // React template should have React dependencies
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.dependencies).toHaveProperty('react-dom');
+      expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
+      expect(packageJson.devDependencies).toHaveProperty('@testing-library/react');
+    });
+
+    it('should create main.ts for typescript template', async () => {
+      await init({
+        projectName: 'typescript-entry-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const mainTsPath = path.join(testDir, 'src', 'main.ts');
+      const indexHtmlPath = path.join(testDir, 'index.html');
+
+      expect(fs.existsSync(mainTsPath), 'main.ts should exist for typescript template').toBe(true);
+      
+      const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
+      expect(indexHtml).toContain('src="/src/main.ts"');
+      expect(indexHtml).not.toContain('main.tsx');
+    });
+
+    it('should create main.tsx for react template', async () => {
+      await init({
+        projectName: 'react-entry-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      const mainTsxPath = path.join(testDir, 'src', 'main.tsx');
+      const indexHtmlPath = path.join(testDir, 'index.html');
+
+      expect(fs.existsSync(mainTsxPath), 'main.tsx should exist for react template').toBe(true);
+      
+      const indexHtml = fs.readFileSync(indexHtmlPath, 'utf-8');
+      expect(indexHtml).toContain('src="/src/main.tsx"');
+      expect(indexHtml).not.toContain('main.ts"');
+    });
+
+    it('should throw error for invalid template type', async () => {
+      await expect(init({
+        projectName: 'invalid-template-test',
+        targetDir: testDir,
+        template: 'invalid-template' as any,
+      })).rejects.toThrow();
+    });
+
+    it('should have templates/typescript directory structure', () => {
+      const typescriptTemplatePath = path.join(process.cwd(), 'templates', 'typescript');
+      expect(fs.existsSync(typescriptTemplatePath), 'templates/typescript should exist').toBe(true);
+      expect(fs.statSync(typescriptTemplatePath).isDirectory()).toBe(true);
+    });
+
+    it('should have templates/react directory structure', () => {
+      const reactTemplatePath = path.join(process.cwd(), 'templates', 'react');
+      expect(fs.existsSync(reactTemplatePath), 'templates/react should exist').toBe(true);
+      expect(fs.statSync(reactTemplatePath).isDirectory()).toBe(true);
     });
   });
 
@@ -757,6 +870,83 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Verify .husky was created
       const huskyDir = path.join(testDir, '.husky');
       expect(fs.existsSync(huskyDir)).toBe(true);
+    });
+
+    it('should preserve template type in package.json during init', async () => {
+      await init({
+        projectName: 'template-metadata-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+      // Template type should be stored in package.json
+      expect(packageJson.typescriptBootstrap).toBeDefined();
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+    });
+
+    it('should use correct template during update based on stored metadata', async () => {
+      // Create TypeScript template project
+      await init({
+        projectName: 'typescript-update-test',
+        targetDir: testDir,
+        template: 'typescript',
+      });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+      // Verify it's TypeScript template (no React deps)
+      expect(packageJson.dependencies).toBeUndefined();
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+
+      // Modify package.json to add custom field
+      packageJson.customField = 'custom-value';
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Read updated package.json
+      packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+      // Should still be TypeScript template (no React deps added)
+      expect(packageJson.dependencies).toBeUndefined();
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+      expect(packageJson.customField).toBe('custom-value');
+    });
+
+    it('should use correct template during update for React projects', async () => {
+      // Create React template project
+      await init({
+        projectName: 'react-update-test',
+        targetDir: testDir,
+        template: 'react',
+      });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+      // Verify it's React template
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.typescriptBootstrap.template).toBe('react');
+
+      // Remove a devDependency to simulate outdated project
+      delete packageJson.devDependencies['@vitejs/plugin-react'];
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      // Update the project
+      await update({ targetDir: testDir });
+
+      // Read updated package.json
+      packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+
+      // React deps should be restored
+      expect(packageJson.dependencies).toHaveProperty('react');
+      expect(packageJson.devDependencies).toHaveProperty('@vitejs/plugin-react');
+      expect(packageJson.typescriptBootstrap.template).toBe('react');
     });
   });
 });

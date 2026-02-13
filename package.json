@@ -11,7 +11,14 @@
   "files": [
     "dist",
     "templates",
-    "bin"
+    "bin",
+    ".github",
+    ".husky",
+    "eslint.config.js",
+    "vitest.config.ts",
+    "tsconfig.json",
+    "src/test.setup.ts",
+    ".gitignore"
   ],
   "scripts": {
     "build": "tsc",
