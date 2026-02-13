@@ -16,6 +16,9 @@ jobs:
       contents: read
       actions: read
       packages: write
+    env:
+      ARTIFACT_POLLING_MAX_ATTEMPTS: 30  # 5 minutes total wait time (30 attempts × 10 seconds)
+      ARTIFACT_POLLING_INTERVAL_SECONDS: 10
     steps:
       - uses: actions/checkout@v4
       
@@ -30,9 +33,6 @@ jobs:
         id: wait-artifact
         run: |
           echo "Checking artifact availability for workflow run ${{ github.event.workflow_run.id }}..."
-          # Constants for artifact polling
-          ARTIFACT_POLLING_MAX_ATTEMPTS=30  # 5 minutes total wait time (30 attempts × 10 seconds)
-          ARTIFACT_POLLING_INTERVAL_SECONDS=10
           
           ATTEMPT=0
           ARTIFACT_FOUND=false
@@ -45,16 +45,13 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts")
             
-            # Check if artifact exists
-            ARTIFACT_COUNT=$(echo "$RESPONSE" | jq '.artifacts | length')
+            # Check if 'dist' artifact exists in the artifacts array
+            DIST_ARTIFACT=$(echo "$RESPONSE" | jq -r '.artifacts[] | select(.name == "dist") | .name')
             
-            if [ "$ARTIFACT_COUNT" -gt 0 ]; then
-              ARTIFACT_NAME=$(echo "$RESPONSE" | jq -r '.artifacts[0].name')
-              if [ "$ARTIFACT_NAME" = "dist" ]; then
-                echo "✓ Artifact 'dist' found and ready for download"
-                ARTIFACT_FOUND=true
-                break
-              fi
+            if [ "$DIST_ARTIFACT" = "dist" ]; then
+              echo "✓ Artifact 'dist' found and ready for download"
+              ARTIFACT_FOUND=true
+              break
             fi
             
             echo "Artifact not yet available, waiting $ARTIFACT_POLLING_INTERVAL_SECONDS seconds..."
@@ -84,12 +81,17 @@ jobs:
           echo "::error::Failed to download build artifacts from workflow run ${{ github.event.workflow_run.id }}"
           exit 1
       
-      - name: Verify dist directory contents
+      - name: Verify artifact integrity
         run: |
-          echo "Verifying dist/ directory contents..."
+          echo "Verifying artifact integrity..."
           
           if [ ! -d "dist" ]; then
             echo "::error::dist/ directory does not exist after artifact download"
+            exit 1
+          fi
+          
+          if [ ! -f "dist-checksums.txt" ]; then
+            echo "::error::Checksum file not found - artifact integrity cannot be verified"
             exit 1
           fi
           
@@ -101,6 +103,18 @@ jobs:
           fi
           
           echo "✓ Found $FILE_COUNT file(s) in dist/ directory"
+          
+          # Verify checksums
+          echo "Verifying SHA256 checksums..."
+          cd dist
+          if sha256sum -c ../dist-checksums.txt; then
+            echo "✓ All checksums verified successfully"
+          else
+            echo "::error::Checksum verification failed - artifact may have been tampered with"
+            exit 1
+          fi
+          cd ..
+          
           echo "Contents:"
           ls -lah dist/
       

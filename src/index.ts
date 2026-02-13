@@ -328,7 +328,8 @@ function updatePackageJson(
   }
   const processedTemplatePkg = JSON.parse(templateContent);
 
-  // Update scripts from template
+  // Update scripts from template - overwrite with template versions, preserve only custom additions
+  // Standard scripts (dev, build, test, etc.) are updated to maintain template consistency
   targetPkg.scripts = {
     ...targetPkg.scripts,
     ...processedTemplatePkg.scripts,
@@ -387,8 +388,13 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility
 
   console.log(`\n🔄 Updating TypeScript Bootstrap project: ${projectName}\n`);
-  console.log('⚠️  Warning: This will overwrite configuration files and template-provided scripts/dependencies.');
-  console.log('   Only custom additions (new scripts/dependencies not in the template) will be preserved.\n');
+  console.log('⚠️  Warning: This will update your project with the latest template changes.');
+  console.log('   • Configuration files (tsconfig.json, vite.config.ts, etc.) will be overwritten');
+  console.log('   • Dependencies will be updated to template versions');
+  console.log('   • Template scripts (dev, build, test, etc.) will be overwritten');
+  console.log('   • Custom scripts (not in template) will be preserved');
+  console.log('   • Source code (src/) and custom files remain untouched');
+  console.log('   💡 Tip: Use custom script names (e.g., "dev:custom") for your modifications\n');
 
   const templateDir = path.join(__dirname, '..', 'templates', template);
   

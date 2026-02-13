@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
+import react from '@vitejs/plugin-react';
 
 // Vitest configuration for React projects
 export default defineConfig({
+  plugins: [react()],
   test: {
     globals: true,
     environment: 'happy-dom',
