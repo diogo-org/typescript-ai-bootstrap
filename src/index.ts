@@ -317,16 +317,18 @@ function updatePackageJson(
   };
 
   // Update devDependencies (merge, preferring template versions)
-  targetPkg.devDependencies = {
-    ...targetPkg.devDependencies,
-    ...processedTemplatePkg.devDependencies,
-  };
+  if (processedTemplatePkg.devDependencies) {
+    targetPkg.devDependencies = {
+      ...(targetPkg.devDependencies || {}),
+      ...processedTemplatePkg.devDependencies,
+    };
+  }
 
   // Update dependencies (merge, preferring template versions)
   // This is important for React templates that have dependencies like react and react-dom
   if (processedTemplatePkg.dependencies) {
     targetPkg.dependencies = {
-      ...targetPkg.dependencies,
+      ...(targetPkg.dependencies || {}),
       ...processedTemplatePkg.dependencies,
     };
   }

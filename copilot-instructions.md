@@ -18,21 +18,36 @@ This is a reusable npm package that provides high-quality TypeScript project sca
 **Before** replicating configurations to other projects via `init()` and `update()`.
 
 **Implementation:**
-- All shared configs live in the **root** (`.github/`, `.husky/`, `eslint.config.js`, `vitest.config.ts`, `tsconfig.json`, `src/test.setup.ts`, `.gitignore`)
-- These files are **copied at runtime** during `init()` and `update()`
-- Root `package.json` must include these directories in `"files"` array for npm publishing
-- Tests verify these files are NOT duplicated in `templates/` directory
+
+**Shared configs (copied from root):**
+- `.github/` - Workflows and AI instructions (stored in root, copied at runtime)
+- `.husky/` - Git hooks for pre-commit checks (stored in root, copied at runtime)
+- `eslint.config.js` - Linting rules (stored in root, copied at runtime)
+- `src/test.setup.ts` - Test environment setup (stored in root, copied at runtime)
+- `.gitignore` - Git ignore patterns (stored in root, copied at runtime)
+
+**Template-specific configs (copied from templates/[template-name]/):**
+- `vitest.config.ts` - Test configuration (React needs 'happy-dom', TypeScript needs 'node')
+- `tsconfig.json` - TypeScript settings (React needs JSX support, TypeScript doesn't need DOM types)
+- `tsconfig.node.json` - TypeScript for build tools
+- `vite.config.ts` - Build configuration (React needs JSX plugin, TypeScript is vanilla)
+- `package.json` - Dependencies and scripts (merged at runtime)
+- `README.md` - Template-specific documentation
+- Template-specific source files in `src/`
+
+Root `package.json` must include shared directories (`.github/`, `.husky/`, etc.) in `"files"` array for npm publishing.
 
 **DO NOT:**
-- ❌ Move config files into `templates/` to avoid publishing them separately
-- ❌ Create separate configs for the tool vs generated projects
+- ❌ Move shared config files into `templates/` to avoid publishing them separately
+- ❌ Duplicate template-specific configs in root (they need different settings per template)
 - ❌ Skip testing configs before distributing them
 
 **DO:**
-- ✅ Keep one source of truth in the root
-- ✅ Test configs in this project first
+- ✅ Keep shared configs in root, template-specific configs in `templates/[template-name]/`
+- ✅ Test both shared and template-specific configs in this project first
 - ✅ Include required directories in `package.json` `"files"` array
-- ✅ Copy from root at runtime using `copyFile()` and `copyDirectory()` helpers
+- ✅ Copy from root using `copyFile()` and `copyDirectory()` helpers
+- ✅ Copy template-specific files using `copyTemplate()` helper
 
 ## Core Philosophy
 

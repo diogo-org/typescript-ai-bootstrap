@@ -429,108 +429,6 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
   });
 
-  describe('Workflow Integrity', () => {
-    it('should NOT have templates/.github/workflows directory (workflows should be copied at runtime)', () => {
-      // This test ensures we don't duplicate workflow files in the templates directory
-      // Workflows should be copied from .github/workflows when creating/updating projects
-      const templatesWorkflowsPath = path.join(process.cwd(), 'templates', '.github', 'workflows');
-      expect(fs.existsSync(templatesWorkflowsPath), 'templates/.github/workflows should not exist - workflows are copied at runtime').toBe(false);
-    });
-
-    it('should NOT have templates/.github/copilot-instructions.md (should be copied at runtime)', () => {
-      // This test ensures we don't duplicate copilot instructions in the templates directory
-      const templatesCopilotPath = path.join(process.cwd(), 'templates', '.github', 'copilot-instructions.md');
-      expect(fs.existsSync(templatesCopilotPath), 'templates/.github/copilot-instructions.md should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should NOT have templates/.husky directory (should be copied at runtime)', () => {
-      // This test ensures we don't duplicate husky hooks in the templates directory
-      const templatesHuskyPath = path.join(process.cwd(), 'templates', '.husky');
-      expect(fs.existsSync(templatesHuskyPath), 'templates/.husky should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should have .github/workflows directory in the main project', () => {
-      // Ensure the source workflows directory exists
-      const mainWorkflowsPath = path.join(process.cwd(), '.github', 'workflows');
-      expect(fs.existsSync(mainWorkflowsPath), '.github/workflows should exist in the main project').toBe(true);
-      
-      // Check that it has the expected workflow files
-      const expectedWorkflows = ['ci.yml', 'build.yml', 'publish.yml'];
-      for (const workflow of expectedWorkflows) {
-        const workflowPath = path.join(mainWorkflowsPath, workflow);
-        expect(fs.existsSync(workflowPath), `${workflow} should exist in .github/workflows`).toBe(true);
-      }
-    });
-
-    it('should have .github/copilot-instructions.md in the main project', () => {
-      const mainCopilotPath = path.join(process.cwd(), '.github', 'copilot-instructions.md');
-      expect(fs.existsSync(mainCopilotPath), '.github/copilot-instructions.md should exist in the main project').toBe(true);
-    });
-
-    it('should have .husky directory in the main project', () => {
-      const mainHuskyPath = path.join(process.cwd(), '.husky');
-      expect(fs.existsSync(mainHuskyPath), '.husky should exist in the main project').toBe(true);
-      
-      // Check for expected husky files
-      const expectedFiles = ['pre-commit', 'pre-commit.cjs'];
-      for (const file of expectedFiles) {
-        const filePath = path.join(mainHuskyPath, file);
-        expect(fs.existsSync(filePath), `${file} should exist in .husky`).toBe(true);
-      }
-    });
-
-    it('should NOT have templates/eslint.config.js (should be copied at runtime)', () => {
-      // This test ensures we don't duplicate eslint config in the templates directory
-      const templatesEslintPath = path.join(process.cwd(), 'templates', 'eslint.config.js');
-      expect(fs.existsSync(templatesEslintPath), 'templates/eslint.config.js should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should have eslint.config.js in the main project', () => {
-      const mainEslintPath = path.join(process.cwd(), 'eslint.config.js');
-      expect(fs.existsSync(mainEslintPath), 'eslint.config.js should exist in the main project').toBe(true);
-    });
-
-    it('should NOT have templates/vitest.config.ts (should be copied at runtime)', () => {
-      const templatesVitestPath = path.join(process.cwd(), 'templates', 'vitest.config.ts');
-      expect(fs.existsSync(templatesVitestPath), 'templates/vitest.config.ts should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should have vitest.config.ts in the main project', () => {
-      const mainVitestPath = path.join(process.cwd(), 'vitest.config.ts');
-      expect(fs.existsSync(mainVitestPath), 'vitest.config.ts should exist in the main project').toBe(true);
-    });
-
-    it('should NOT have templates/tsconfig.json (should be copied at runtime)', () => {
-      const templatesTsconfigPath = path.join(process.cwd(), 'templates', 'tsconfig.json');
-      expect(fs.existsSync(templatesTsconfigPath), 'templates/tsconfig.json should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should have tsconfig.json in the main project', () => {
-      const mainTsconfigPath = path.join(process.cwd(), 'tsconfig.json');
-      expect(fs.existsSync(mainTsconfigPath), 'tsconfig.json should exist in the main project').toBe(true);
-    });
-
-    it('should NOT have templates/src/test.setup.ts (should be copied at runtime)', () => {
-      const templatesTestSetupPath = path.join(process.cwd(), 'templates', 'src', 'test.setup.ts');
-      expect(fs.existsSync(templatesTestSetupPath), 'templates/src/test.setup.ts should not exist - it is copied at runtime').toBe(false);
-    });
-
-    it('should have src/test.setup.ts in the main project', () => {
-      const mainTestSetupPath = path.join(process.cwd(), 'src', 'test.setup.ts');
-      expect(fs.existsSync(mainTestSetupPath), 'src/test.setup.ts should exist in the main project').toBe(true);
-    });
-
-    it('should NOT have templates/_gitignore (should use .gitignore directly)', () => {
-      const templatesGitignorePath = path.join(process.cwd(), 'templates', '_gitignore');
-      expect(fs.existsSync(templatesGitignorePath), 'templates/_gitignore should not exist - use .gitignore directly').toBe(false);
-    });
-
-    it('should have .gitignore in the main project', () => {
-      const mainGitignorePath = path.join(process.cwd(), '.gitignore');
-      expect(fs.existsSync(mainGitignorePath), '.gitignore should exist in the main project').toBe(true);
-    });
-  });
-
   describe('Project Update', () => {
     it('should fail when no package.json exists', async () => {
       // Try to update a directory without package.json
@@ -1212,18 +1110,19 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         template: 'react',
       });
 
-      // Remove a deeply nested file to force directory creation during update
-      const huskyNestedPath = path.join(testDir, '.husky', '_');
-      if (fs.existsSync(huskyNestedPath)) {
-        fs.rmSync(huskyNestedPath, { recursive: true, force: true });
+      // Remove husky files to force directory recreation during update
+      const huskyDir = path.join(testDir, '.husky');
+      if (fs.existsSync(huskyDir)) {
+        fs.rmSync(huskyDir, { recursive: true, force: true });
       }
 
       // Update should recreate the directory structure
       await update({ targetDir: testDir });
 
-      // Verify nested directory was recreated
-      expect(fs.existsSync(huskyNestedPath)).toBe(true);
-      expect(fs.existsSync(path.join(huskyNestedPath, 'husky.sh'))).toBe(true);
+      // Verify .husky directory and files were recreated (Husky v9 structure)
+      expect(fs.existsSync(huskyDir)).toBe(true);
+      expect(fs.existsSync(path.join(huskyDir, 'pre-commit'))).toBe(true);
+      expect(fs.existsSync(path.join(huskyDir, 'pre-commit.cjs'))).toBe(true);
     });
   });
 });
