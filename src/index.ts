@@ -2,9 +2,35 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Helper to prompt user for input
+ */
+function prompt(question: string): Promise<string> {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+/**
+ * Helper to prompt user for yes/no confirmation
+ */
+async function confirm(question: string): Promise<boolean> {
+  const answer = await prompt(`${question} (y/n): `);
+  return answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
+}
 
 const UPDATABLE_FILES = [
   // Template-specific configuration files (copied from templates/)
@@ -112,10 +138,12 @@ interface InitOptions {
   projectTitle?: string;
   targetDir?: string;
   template?: 'typescript' | 'react';
+  skipPrompts?: boolean; // For AI/programmatic use
 }
 
 interface UpdateOptions {
   targetDir?: string;
+  skipPrompts?: boolean; // For AI/programmatic use
 }
 
 /**
@@ -180,11 +208,31 @@ export async function init(options: InitOptions = {}): Promise<void> {
   const projectName = options.projectName || path.basename(process.cwd());
   const projectTitle = options.projectTitle || projectName;
   const targetDir = options.targetDir || process.cwd();
-  const template = options.template || 'react';
+  
+  // Prompt for template if not provided (AI-friendly: skip prompt if option is set or skipPrompts is true)
+  let template = options.template;
+  if (!template && !options.skipPrompts) {
+    console.log('\n📋 Available templates:');
+    console.log('  1. typescript - Pure TypeScript project');
+    console.log('  2. react - React + TypeScript project\n');
+    
+    const choice = await prompt('Choose a template (1 or 2): ');
+    
+    if (choice === '1') {
+      template = 'typescript';
+    } else if (choice === '2') {
+      template = 'react';
+    } else {
+      throw new Error('Invalid choice. Please select 1 or 2.');
+    }
+  } else if (!template && options.skipPrompts) {
+    // Default to react when skipPrompts is true and no template specified
+    template = 'react';
+  }
 
   // Validate template type
-  const validTemplates = ['typescript', 'react'];
-  if (!validTemplates.includes(template)) {
+  const validTemplates: Array<'typescript' | 'react'> = ['typescript', 'react'];
+  if (!template || !validTemplates.includes(template)) {
     throw new Error(`Invalid template: ${template}. Valid options: ${validTemplates.join(', ')}`);
   }
 
@@ -373,7 +421,7 @@ export async function createOrUpdate(options: InitOptions & UpdateOptions = {}):
 
   if (fs.existsSync(packageJsonPath)) {
     console.log('\n🔎 Existing project detected. Running update...\n');
-    await update({ targetDir });
+    await update({ targetDir, skipPrompts: options.skipPrompts });
     return;
   }
 
@@ -406,14 +454,26 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
   const projectTitle = packageJson.description || projectName;
   const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility
 
-  console.log(`\n🔄 Updating TypeScript Bootstrap project: ${projectName}\n`);
-  console.log('⚠️  Warning: This will update your project with the latest template changes.');
+  console.log(`\n🔄 Update available for: ${projectName}\n`);
+  console.log('⚠️  This will update your project with the latest template changes:');
   console.log('   • Configuration files (tsconfig.json, vite.config.ts, etc.) will be overwritten');
   console.log('   • Dependencies will be updated to template versions');
   console.log('   • Template scripts (dev, build, test, etc.) will be overwritten');
   console.log('   • Custom scripts (not in template) will be preserved');
   console.log('   • Source code (src/) and custom files remain untouched');
   console.log('   💡 Tip: Use custom script names (e.g., "dev:custom") for your modifications\n');
+
+  // Prompt for confirmation before proceeding (AI-friendly: skip if skipPrompts is true)
+  if (!options.skipPrompts) {
+    const shouldProceed = await confirm('Do you want to proceed with the update?');
+    
+    if (!shouldProceed) {
+      console.log('\n❌ Update cancelled.\n');
+      return;
+    }
+  }
+
+  console.log(`\n🔄 Updating TypeScript Bootstrap project: ${projectName}\n`);
 
   const templateDir = path.join(__dirname, '..', 'templates', template);
   
