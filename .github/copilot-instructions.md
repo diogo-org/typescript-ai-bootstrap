@@ -226,10 +226,11 @@ When helping with this project:
 1. **Always follow TDD** - Write tests first, then implementation
 2. **Preserve quality standards** - Never lower thresholds or disable checks
 3. **Maintain separation of concerns** - Keep business logic separate from UI
-4. **Use named constants** - No magic numbers
-5. **Test everything** - Minimum 80% coverage is required
-6. **Keep modules focused** - One responsibility per file
-7. **Document decisions** - Explain non-obvious code choices
+4. **Version bump required for release** - Before tagging or publishing, update `package.json` using `npm run version:patch|version:minor|version:major`
+5. **Use named constants** - No magic numbers
+6. **Test everything** - Minimum 80% coverage is required
+7. **Keep modules focused** - One responsibility per file
+8. **Document decisions** - Explain non-obvious code choices
 
 ## Success Criteria
 
