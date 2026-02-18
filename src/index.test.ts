@@ -1496,7 +1496,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(path.join(bareDir, 'package.json'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, 'src'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, '.github', 'workflows'))).toBe(true);
-    expect(fs.existsSync(path.join(bareDir, '.github', 'copilot-instructions.md'))).toBe(true);
+      expect(fs.existsSync(path.join(bareDir, '.github', 'copilot-instructions.md'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, '.husky'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, '.gitignore'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, 'eslint.config.js'))).toBe(true);
