@@ -1758,6 +1758,79 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         process.chdir(originalCwd);
       }
     });
+
+    it('should throw error when package.json in createOrUpdate is not parseable', async () => {
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, '{ invalid json }', 'utf-8');
+
+      await expect(
+        createOrUpdate({ targetDir: testDir, skipPrompts: true })
+      ).rejects.toThrow('but it could not be parsed');
+    });
+
+    it('should throw error when non-bootstrap project is detected with skipPrompts', async () => {
+      // Create a non-bootstrap package.json (without typescriptBootstrap metadata)
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, JSON.stringify({
+        name: 'existing-project',
+        version: '1.0.0'
+      }, null, 2), 'utf-8');
+
+      await expect(
+        createOrUpdate({ targetDir: testDir, skipPrompts: true })
+      ).rejects.toThrow('no TypeScript Bootstrap metadata was detected');
+    });
+
+    it('should prompt and update when non-bootstrap project user confirms', async () => {
+      // Create a non-bootstrap package.json
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, JSON.stringify({
+        name: 'existing-non-bootstrap',
+        version: '1.0.0'
+      }, null, 2), 'utf-8');
+
+      // Mock prompt to simulate user saying 'yes'
+      const mockPrompt = async () => {
+        return 'y';
+      };
+
+      await createOrUpdate({ 
+        targetDir: testDir, 
+        skipPrompts: false,
+        prompt: mockPrompt,
+        confirm: async () => true
+      });
+
+      // Verify project was updated with TypeScript Bootstrap metadata
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeDefined();
+    });
+
+    it('should abort when non-bootstrap project user declines', async () => {
+      // Create a non-bootstrap package.json
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const originalContent = JSON.stringify({
+        name: 'existing-non-bootstrap',
+        version: '1.0.0'
+      }, null, 2);
+      fs.writeFileSync(packageJsonPath, originalContent, 'utf-8');
+
+      // Mock prompt to simulate user saying 'no'
+      const mockPrompt = async () => {
+        return 'n';
+      };
+
+      await createOrUpdate({ 
+        targetDir: testDir, 
+        skipPrompts: false,
+        prompt: mockPrompt
+      });
+
+      // Verify project was NOT updated (no TypeScript Bootstrap metadata)
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeUndefined();
+      expect(updatedPackageJson.name).toBe('existing-non-bootstrap');
+    });
   });
 
   describe('Error Handling', () => {
