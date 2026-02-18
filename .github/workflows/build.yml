@@ -23,6 +23,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
+
+      - name: Validate version bumped in PR
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          PR_VERSION=$(node -p "require('./package.json').version")
+          MAIN_VERSION=$(git show origin/main:package.json | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")
+          echo "PR version: $PR_VERSION"
+          echo "Main version: $MAIN_VERSION"
+          if [ "$PR_VERSION" = "$MAIN_VERSION" ]; then
+            echo "Error: package.json version was not bumped in this PR"
+            exit 1
+          fi
       
       - name: Install dependencies
         run: npm ci
