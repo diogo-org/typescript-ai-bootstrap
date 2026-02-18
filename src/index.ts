@@ -1,17 +1,21 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
 import * as readline from 'readline';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
 
 /**
  * Helper to prompt user for input
  */
-function prompt(question: string): Promise<string> {
-  const rl = readline.createInterface({
+type CreateInterface = typeof readline.createInterface;
+
+function prompt(
+  question: string,
+  createInterface: CreateInterface = readline.createInterface
+): Promise<string> {
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
   });
@@ -27,8 +31,11 @@ function prompt(question: string): Promise<string> {
 /**
  * Helper to prompt user for yes/no confirmation
  */
-async function confirm(question: string): Promise<boolean> {
-  const answer = await prompt(`${question} (y/n): `);
+async function confirm(
+  question: string,
+  promptInput: (input: string) => Promise<string> = prompt
+): Promise<boolean> {
+  const answer = await promptInput(`${question} (y/n): `);
   return answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
 }
 
@@ -39,6 +46,7 @@ const UPDATABLE_FILES = [
   'vite.config.ts',
   'vitest.config.ts',
   'index.html',
+  '.vscode/settings.json',
   // Note: src/test.setup.ts is intentionally NOT updatable to preserve user customizations
   // Note: .gitignore and eslint.config.js are copied separately from root via copyFile()
 ];
@@ -64,7 +72,9 @@ function copyWorkflows(
   const files = fs.readdirSync(sourceDir);
   for (const file of files) {
     // Skip publish.yml as it's specific to the bootstrap package
-    if (file === 'publish.yml') continue;
+    if (file === 'publish.yml') {
+      continue;
+    }
     
     const sourcePath = path.join(sourceDir, file);
     const targetPath = path.join(targetDir, file);
@@ -139,11 +149,13 @@ interface InitOptions {
   targetDir?: string;
   template?: 'typescript' | 'react';
   skipPrompts?: boolean; // For AI/programmatic use
+  prompt?: (question: string) => Promise<string>;
 }
 
 interface UpdateOptions {
   targetDir?: string;
   skipPrompts?: boolean; // For AI/programmatic use
+  confirm?: (question: string) => Promise<boolean>;
 }
 
 /**
@@ -216,7 +228,8 @@ export async function init(options: InitOptions = {}): Promise<void> {
     console.log('  1. typescript - Pure TypeScript project');
     console.log('  2. react - React + TypeScript project\n');
     
-    const choice = await prompt('Choose a template (1 or 2): ');
+    const promptInput = options.prompt ?? __internal.prompt;
+    const choice = await promptInput('Choose a template (1 or 2): ');
     
     if (choice === '1') {
       template = 'typescript';
@@ -263,6 +276,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
     
     // Copy .github/copilot-instructions.md from the main project
     copyFile('.github/copilot-instructions.md', targetDir, logCreated);
+
+    // Copy .github/PULL_REQUEST_TEMPLATE.md from the main project
+    copyFile('.github/PULL_REQUEST_TEMPLATE.md', targetDir, logCreated);
     
     // Copy .husky directory from the main project
     copyDirectory('.husky', targetDir, logCreated);
@@ -409,7 +425,7 @@ function updatePackageJson(
     targetPkg.typescriptBootstrap = targetPkg.typescriptBootstrap ?? processedTemplatePkg.typescriptBootstrap;
   }
 
-  fs.writeFileSync(targetPath, JSON.stringify(targetPkg, null, 2) + '\n', 'utf-8');
+  fs.writeFileSync(targetPath, `${JSON.stringify(targetPkg, null, 2)}\n`, 'utf-8');
 }
 
 /**
@@ -420,8 +436,52 @@ export async function createOrUpdate(options: InitOptions & UpdateOptions = {}):
   const packageJsonPath = path.join(targetDir, 'package.json');
 
   if (fs.existsSync(packageJsonPath)) {
-    console.log('\n🔎 Existing project detected. Running update...\n');
-    await update({ targetDir, skipPrompts: options.skipPrompts });
+    let packageJsonContent: string;
+    let packageJson: Record<string, unknown>;
+
+    try {
+      packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
+      packageJson = JSON.parse(packageJsonContent);
+    } catch {
+      throw new Error(
+        `Found existing package.json at ${packageJsonPath}, but it could not be parsed. ` +
+          'Aborting update to avoid corrupting an existing project. Please ensure package.json is valid JSON.'
+      );
+    }
+
+    // Only auto-update when this is a recognized TypeScript Bootstrap project
+    if (packageJson && packageJson.typescriptBootstrap) {
+      console.log('\n🔎 Existing TypeScript Bootstrap project detected. Running update...\n');
+      await update({ ...options, targetDir });
+      return;
+    }
+
+    // Non-bootstrap project detected. Require explicit opt-in to proceed.
+    if (options.skipPrompts) {
+      throw new Error(
+        'Existing package.json found, but no TypeScript Bootstrap metadata was detected.\n' +
+          'Refusing to update a non-bootstrap project when prompts are disabled, to avoid overwriting configuration.\n' +
+          'If you really want to apply the TypeScript Bootstrap template here, re-run without --skip-prompts ' +
+          'and explicitly confirm the update, or run init in an empty/new directory.'
+      );
+    }
+
+    const promptInput = options.prompt ?? __internal.prompt;
+    const answer = (await promptInput(
+      'An existing project (without TypeScript Bootstrap metadata) was found in this directory.\n' +
+        'Running an update here may overwrite configuration files (tsconfig, Vite config, ESLint, etc.).\n' +
+        'Do you still want to run the update using the selected template? (y/N) '
+    ))
+      .trim()
+      .toLowerCase();
+
+    if (answer === 'y' || answer === 'yes') {
+      console.log('\n⚠️  Proceeding to update existing non-bootstrap project...\n');
+      await update({ ...options, targetDir });
+      return;
+    }
+
+    console.log('\nAborting update. No changes were made to the existing project.\n');
     return;
   }
 
@@ -465,7 +525,8 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
   // Prompt for confirmation before proceeding (AI-friendly: skip if skipPrompts is true)
   if (!options.skipPrompts) {
-    const shouldProceed = await confirm('Do you want to proceed with the update?');
+    const confirmPrompt = options.confirm ?? __internal.confirm;
+    const shouldProceed = await confirmPrompt('Do you want to proceed with the update?');
     
     if (!shouldProceed) {
       console.log('\n❌ Update cancelled.\n');
@@ -512,6 +573,9 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     // Copy .github/copilot-instructions.md from the main project
     copyFile('.github/copilot-instructions.md', targetDir, trackUpdated);
 
+    // Copy .github/PULL_REQUEST_TEMPLATE.md from the main project
+    copyFile('.github/PULL_REQUEST_TEMPLATE.md', targetDir, trackUpdated);
+
     // Copy .husky directory from the main project
     copyDirectory('.husky', targetDir, trackUpdated);
 
@@ -539,3 +603,10 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
     throw error;
   }
 }
+
+export const __internal = {
+  confirm,
+  copyFile,
+  copyWorkflows,
+  prompt,
+};

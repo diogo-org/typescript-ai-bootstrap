@@ -102,6 +102,8 @@ describe('newFeature', () => {
 - **No God Classes** - Keep files under 200 lines when possible
 - **No Magic Numbers** - Use named constants (ESLint enforces this)
 - **Separation of Concerns** - Never mix business logic with UI concerns in the same module
+- **Fail Fast** - Validate inputs early and surface errors with clear messages
+- **Prevent Bugs Early** - Tests first, strict linting, and high coverage are non-negotiable
 
 ## Pre-Commit Quality Gates
 

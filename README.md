@@ -8,7 +8,7 @@ Authored by Copilot, guided by Diogo.
 
 - ⚡️ **Vite** - Lightning fast HMR and build tooling
 - 🎯 **TypeScript** - Strict type checking with best practices
-- ✅ **Vitest** - Fast unit testing with 80% coverage requirements
+- ✅ **Vitest** - Fast unit testing with 90% coverage requirements
 - 🔍 **ESLint** - Strict linting rules for quality code
 - 🎨 **Two Templates** - React web apps or vanilla TypeScript projects
 - 🪝 **Pre-commit Hooks** - Automated quality checks before every commit
@@ -20,7 +20,14 @@ This scaffolding enforces high-quality code standards ideal for AI-assisted deve
 
 - **No Magic Numbers**: All numeric literals must be named constants
 - **Strict TypeScript**: Full type safety with strict compiler options
-- **High Test Coverage**: 80% minimum coverage for lines, functions, branches, and statements
+- **Strict Equality**: Always use `===` and `!==` for predictable comparisons
+- **No Duplicate Imports**: One import per module keeps files easier to read
+- **No Redundant Branches**: Avoid unnecessary `else` blocks and ternaries
+- **Object Shorthand**: Consistent object literals for clarity
+- **Consistent Control Flow**: Always use braces, avoid negated conditions
+- **Prefer Const**: Favor `const` for safer, clearer intent
+- **Prefer Templates**: Use template literals over string concatenation
+- **High Test Coverage**: 90% minimum coverage for lines, functions, branches, and statements
 - **Consistent Code Style**: ESLint enforces consistent patterns
 - **Pre-commit Quality Gates**: Automated checks prevent bad commits
 - **AI-Friendly Structure**: Clear separation of concerns and predictable patterns
@@ -156,11 +163,24 @@ my-project/
 Every commit is automatically validated with:
 
 1. **ESLint** - Code style and quality checks
-2. **Tests with Coverage** - All tests must pass with ≥80% coverage
+2. **Tests with Coverage** - All tests must pass with ≥90% coverage
 3. **Code Duplication** - Maximum 1% duplication allowed
 4. **Secrets Detection** - No API keys, tokens, or passwords allowed
 5. **TypeScript** - No type errors allowed
 6. **Build** - Production build must succeed
+
+### Test-Driven Development (TDD)
+
+All new features and bug fixes must follow strict TDD:
+
+1. **Write failing tests first**
+2. **Run tests and confirm red**
+3. **Implement minimal code** to pass
+4. **Refactor** with tests still green
+
+If TDD was skipped, the change is not acceptable.
+
+CI enforces a TDD gate: any change to `src/` must include changes to `*.test.ts` or `*.test.tsx`.
 
 If any check fails, the commit is blocked with clear error messages.
 
@@ -179,7 +199,7 @@ Common indices (0, 1, 2, -1) are allowed in array operations.
 
 ### Test Coverage
 
-All code must maintain minimum 80% coverage across:
+All code must maintain minimum 90% coverage across:
 - Lines of code
 - Functions
 - Branches
