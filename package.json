@@ -1,6 +1,6 @@
 {
-  "name": "@diogo-raphael-cravo/typescript-bootstrap",
-  "version": "1.2.1",
+  "name": "@diogo-org/typescript-bootstrap",
+  "version": "1.2.2",
   "description": "High-quality TypeScript project scaffolding with best practices for AI-assisted development",
   "type": "module",
   "main": "dist/index.js",
@@ -50,7 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/diogo-raphael-cravo/typescript-bootstrap.git"
+    "url": "git+https://github.com/diogo-org/typescript-ai-bootstrap.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
