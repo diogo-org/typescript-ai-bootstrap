@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { init, update, createOrUpdate } from './index.js';
+import { Readable } from 'stream';
+import { init, update, createOrUpdate, __internal } from './index.js';
 
 /**
  * Helper to read package.json from test directory
@@ -88,6 +89,10 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Check that copilot-instructions.md is copied
       const copilotInstructionsPath = path.join(testDir, '.github', 'copilot-instructions.md');
       expect(fs.existsSync(copilotInstructionsPath), 'copilot-instructions.md should exist in .github').toBe(true);
+
+      // Check that PR template is copied
+      const prTemplatePath = path.join(testDir, '.github', 'PULL_REQUEST_TEMPLATE.md');
+      expect(fs.existsSync(prTemplatePath), 'PULL_REQUEST_TEMPLATE.md should exist in .github').toBe(true);
       
       // Check that .husky directory and files are copied
       const huskyDir = path.join(testDir, '.husky');
@@ -123,6 +128,28 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const eslintContent = fs.readFileSync(eslintConfigPath, 'utf-8');
       expect(eslintContent).toContain('eslint');
       expect(eslintContent).toContain('typescript-eslint');
+    });
+
+    it('should include stricter lint rules in eslint.config.js', async () => {
+      await init({ projectName: 'eslint-strict-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const eslintConfigPath = path.join(testDir, 'eslint.config.js');
+      const eslintContent = fs.readFileSync(eslintConfigPath, 'utf-8');
+
+      expect(eslintContent).toContain('no-else-return');
+      expect(eslintContent).toContain('no-unneeded-ternary');
+      expect(eslintContent).toContain('object-shorthand');
+      expect(eslintContent).toContain('curly');
+      expect(eslintContent).toContain('no-lonely-if');
+      expect(eslintContent).toContain('no-negated-condition');
+      expect(eslintContent).toContain('no-useless-return');
+      expect(eslintContent).toContain('prefer-const');
+      expect(eslintContent).toContain('prefer-template');
+      expect(eslintContent).toContain('no-implicit-coercion');
+      expect(eslintContent).toContain('no-useless-concat');
+      expect(eslintContent).toContain('no-useless-call');
+      expect(eslintContent).toContain('no-throw-literal');
     });
 
     it('should copy vitest.config.ts during initialization', async () => {
@@ -264,6 +291,30 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       } finally {
         process.chdir(originalCwd);
       }
+    });
+
+    it('should prompt for template and select typescript when choice is 1', async () => {
+      await init({ projectName: 'prompt-typescript-test',
+        targetDir: testDir,
+        prompt: async () => '1' });
+
+      const packageJson = readPackageJson(testDir);
+      expect(packageJson.typescriptBootstrap.template).toBe('typescript');
+    });
+
+    it('should prompt for template and select react when choice is 2', async () => {
+      await init({ projectName: 'prompt-react-test',
+        targetDir: testDir,
+        prompt: async () => '2' });
+
+      const packageJson = readPackageJson(testDir);
+      expect(packageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should throw error when prompt choice is invalid', async () => {
+      await expect(init({ projectName: 'prompt-invalid-test',
+        targetDir: testDir,
+        prompt: async () => '3' })).rejects.toThrow('Invalid choice');
     });
 
     it('should create all configuration files with valid syntax', async () => {
@@ -534,6 +585,102 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(updatedPackageJson.name).toBe(projectName);
     });
 
+    it('should abort update when user declines confirmation', async () => {
+      await init({ projectName: 'update-cancel-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const tsconfigPath = path.join(testDir, 'tsconfig.json');
+      fs.writeFileSync(tsconfigPath, '// user modified', 'utf-8');
+
+      await update({ targetDir: testDir, confirm: async () => false });
+
+      const tsconfigContent = fs.readFileSync(tsconfigPath, 'utf-8');
+      expect(tsconfigContent).toBe('// user modified');
+    });
+
+    it('should proceed when user confirms update', async () => {
+      await init({ projectName: 'update-confirm-test',
+        targetDir: testDir, skipPrompts: true });
+
+      await update({ targetDir: testDir, confirm: async () => true });
+
+      const eslintPath = path.join(testDir, 'eslint.config.js');
+      expect(fs.existsSync(eslintPath)).toBe(true);
+    });
+
+    it('should update using current working directory when targetDir is omitted', async () => {
+      const projectDir = path.join(testDir, 'cwd-update-test');
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      const originalCwd = process.cwd();
+      process.chdir(projectDir);
+
+      try {
+        await init({ projectName: 'cwd-update-test',
+          targetDir: projectDir,
+          template: 'react', skipPrompts: true });
+
+        await update({ skipPrompts: true });
+
+        const gitignorePath = path.join(projectDir, '.gitignore');
+        expect(fs.existsSync(gitignorePath)).toBe(true);
+      } finally {
+        process.chdir(originalCwd);
+      }
+    });
+
+    it('should use default confirm flow when confirm is not provided', async () => {
+      await init({ projectName: 'default-confirm-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const originalStdin = process.stdin;
+      const input = new Readable({
+        read() {
+          this.push('y\n');
+          this.push(null);
+        },
+      });
+
+      Object.defineProperty(process, 'stdin', {
+        value: input,
+      });
+
+      try {
+        await update({ targetDir: testDir, skipPrompts: false });
+      } finally {
+        Object.defineProperty(process, 'stdin', {
+          value: originalStdin,
+        });
+      }
+
+      const eslintPath = path.join(testDir, 'eslint.config.js');
+      expect(fs.existsSync(eslintPath)).toBe(true);
+    });
+
+    it('should surface template package.json parse errors during update', async () => {
+      await init({ projectName: 'template-parse-error-test',
+        targetDir: testDir,
+        template: 'react', skipPrompts: true });
+
+      const templatePackageJsonPath = path.resolve(
+        process.cwd(),
+        'templates',
+        'react',
+        'package.json'
+      );
+      const originalTemplatePackageJson = fs.readFileSync(templatePackageJsonPath, 'utf-8');
+
+      try {
+        fs.writeFileSync(templatePackageJsonPath, '{ invalid json', 'utf-8');
+
+        await expect(update({ targetDir: testDir, skipPrompts: true }))
+          .rejects
+          .toThrow(/Failed to parse template package\.json/);
+      } finally {
+        fs.writeFileSync(templatePackageJsonPath, originalTemplatePackageJson, 'utf-8');
+      }
+    });
+
     it('should update UPDATABLE_FILES configuration files', async () => {
       // Create a project first
       await init({ projectName: 'config-update-test',
@@ -565,6 +712,66 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         const filePath = path.join(testDir, file);
         expect(fs.existsSync(filePath), `${file} should exist after update`).toBe(true);
       }
+    });
+
+    it('should skip package.json update when template package.json is missing', async () => {
+      await init({ projectName: 'missing-template-package-test',
+        targetDir: testDir,
+        template: 'react', skipPrompts: true });
+
+      const templatePackageJsonPath = path.resolve(
+        process.cwd(),
+        'templates',
+        'react',
+        'package.json'
+      );
+      const backupPath = `${templatePackageJsonPath}.bak`;
+
+      if (fs.existsSync(backupPath)) {
+        fs.rmSync(backupPath, { force: true });
+      }
+
+      fs.renameSync(templatePackageJsonPath, backupPath);
+
+      try {
+        await update({ targetDir: testDir, skipPrompts: true });
+      } finally {
+        fs.renameSync(backupPath, templatePackageJsonPath);
+      }
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      expect(fs.existsSync(packageJsonPath)).toBe(true);
+    });
+
+    it('should recreate nested config directories during update', async () => {
+      await init({ projectName: 'nested-config-update-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const vscodeDir = path.join(testDir, '.vscode');
+      fs.rmSync(vscodeDir, { recursive: true, force: true });
+
+      await update({ targetDir: testDir, skipPrompts: true });
+
+      const settingsPath = path.join(vscodeDir, 'settings.json');
+      expect(fs.existsSync(settingsPath)).toBe(true);
+    });
+
+    it('should throw error when package.json becomes invalid during update', async () => {
+      await init({ projectName: 'invalid-update-package-test',
+        targetDir: testDir,
+        template: 'react', skipPrompts: true });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+
+      await expect(
+        update({
+          targetDir: testDir,
+          confirm: async () => {
+            fs.writeFileSync(packageJsonPath, '{ invalid json', 'utf-8');
+            return true;
+          },
+        })
+      ).rejects.toThrow(/Failed to parse package\.json at/);
     });
 
     it('should merge package.json without overwriting custom fields', async () => {
@@ -643,6 +850,20 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const copilotContent = fs.readFileSync(copilotPath, 'utf-8');
       expect(copilotContent).toContain('Copilot Instructions');
       expect(copilotContent).toContain('High Cohesion, Low Coupling');
+    });
+
+    it('should copy PR template during update', async () => {
+      await init({ projectName: 'pr-template-update-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const prTemplatePath = path.join(testDir, '.github', 'PULL_REQUEST_TEMPLATE.md');
+      if (fs.existsSync(prTemplatePath)) {
+        fs.unlinkSync(prTemplatePath);
+      }
+
+      await update({ targetDir: testDir, skipPrompts: true });
+
+      expect(fs.existsSync(prTemplatePath)).toBe(true);
     });
 
     it('should copy .husky directory during update', async () => {
@@ -796,7 +1017,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Modify existing src/test.setup.ts
       const testSetupPath = path.join(testDir, 'src', 'test.setup.ts');
       const originalContent = fs.readFileSync(testSetupPath, 'utf-8');
-      const modifiedContent = originalContent + '\n// Custom modification';
+      const modifiedContent = `${originalContent}\n// Custom modification`;
       fs.writeFileSync(testSetupPath, modifiedContent);
 
       // Update the project
@@ -928,10 +1149,12 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         { path: 'vite.config.ts', content: '// old vite config' },
         { path: 'vitest.config.ts', content: '// old vitest config' },
         { path: 'index.html', content: '<html><body>old</body></html>' },
+        { path: '.vscode/settings.json', content: '{"old": "settings"}' },
         // Files copied from main project
         { path: 'eslint.config.js', content: '// old eslint config' },
         { path: '.gitignore', content: '# old gitignore' },
         { path: '.github/copilot-instructions.md', content: '# old copilot instructions' },
+        { path: '.github/PULL_REQUEST_TEMPLATE.md', content: '# old pr template' },
         { path: '.github/workflows/ci.yml', content: '# old ci workflow' },
         { path: '.github/workflows/build.yml', content: '# old build workflow' },
         { path: '.husky/pre-commit', content: '# old pre-commit hook' },
@@ -1031,7 +1254,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Add a custom modification to test.setup.ts first
       const testSetupPath = path.join(testDir, 'src/test.setup.ts');
       const originalTestSetup = fs.readFileSync(testSetupPath, 'utf-8');
-      const modifiedTestSetup = originalTestSetup + '\n// Custom user modification';
+      const modifiedTestSetup = `${originalTestSetup}\n// Custom user modification`;
       fs.writeFileSync(testSetupPath, modifiedTestSetup);
 
       // Run update again
@@ -1122,7 +1345,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Modify a file that should NOT be updatable
       const mainTsxPath = path.join(testDir, 'src/main.tsx');
       const originalMainTsx = fs.readFileSync(mainTsxPath, 'utf-8');
-      fs.writeFileSync(mainTsxPath, originalMainTsx + '\n// USER MODIFICATION');
+      fs.writeFileSync(mainTsxPath, `${originalMainTsx}\n// USER MODIFICATION`);
 
       // Run update
       await update({ targetDir: testDir, skipPrompts: true });
@@ -1526,6 +1749,23 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       expect(updatedPackageJson.customField).toBe('custom-value');
     });
+
+    it('should create a project using current working directory by default', async () => {
+      const projectDir = path.join(testDir, 'cwd-create-test');
+      fs.mkdirSync(projectDir, { recursive: true });
+
+      const originalCwd = process.cwd();
+      process.chdir(projectDir);
+
+      try {
+        await createOrUpdate({ skipPrompts: true });
+
+        const packageJsonPath = path.join(projectDir, 'package.json');
+        expect(fs.existsSync(packageJsonPath)).toBe(true);
+      } finally {
+        process.chdir(originalCwd);
+      }
+    });
   });
 
   describe('Error Handling', () => {
@@ -1620,6 +1860,81 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const readmePath = path.join(testDir, 'README.md');
       const readmeContent = fs.readFileSync(readmePath, 'utf-8');
       expect(readmeContent).toContain('Test $& Title');
+    });
+  });
+
+  describe('Internal Helpers', () => {
+    it('should trim input in prompt helper', async () => {
+      const createInterface = () => ({
+        question: (_question: string, callback: (answer: string) => void) => {
+          callback('  yes  ');
+        },
+        close: () => {},
+      } as unknown as ReturnType<typeof import('readline').createInterface>);
+
+      const result = await __internal.prompt('Confirm?', createInterface);
+      expect(result).toBe('yes');
+    });
+
+    it('should handle confirm helper with injected prompt', async () => {
+      const result = await __internal.confirm('Proceed?', async () => 'Y');
+      expect(result).toBe(true);
+    });
+
+    it('should skip copy when workflows source directory is missing', () => {
+      const workflowsPath = path.join(process.cwd(), '.github', 'workflows');
+      const backupPath = `${workflowsPath}.bak`;
+      const updatedPaths: string[] = [];
+
+      if (fs.existsSync(backupPath)) {
+        fs.rmSync(backupPath, { recursive: true, force: true });
+      }
+
+      fs.renameSync(workflowsPath, backupPath);
+
+      try {
+        __internal.copyWorkflows(testDir, (relPath) => updatedPaths.push(relPath));
+      } finally {
+        fs.renameSync(backupPath, workflowsPath);
+      }
+
+      expect(updatedPaths.length).toBe(0);
+    });
+
+    it('should skip copyFile when source file is missing', () => {
+      const updatedPaths: string[] = [];
+      __internal.copyFile('.github/missing-file.md', testDir, (relPath) => updatedPaths.push(relPath));
+      expect(updatedPaths.length).toBe(0);
+    });
+
+    it('should create target directory when copying a file', () => {
+      const updatedPaths: string[] = [];
+      const targetDir = path.join(testDir, 'nested', 'target');
+
+      __internal.copyFile('eslint.config.js', targetDir, (relPath) => updatedPaths.push(relPath));
+
+      const copiedPath = path.join(targetDir, 'eslint.config.js');
+      expect(fs.existsSync(copiedPath)).toBe(true);
+      expect(updatedPaths).toContain('eslint.config.js');
+    });
+
+    it('should throw when template directory is missing', async () => {
+      const reactTemplatePath = path.join(process.cwd(), 'templates', 'react');
+      const backupPath = `${reactTemplatePath}.bak`;
+
+      if (fs.existsSync(backupPath)) {
+        fs.rmSync(backupPath, { recursive: true, force: true });
+      }
+
+      fs.renameSync(reactTemplatePath, backupPath);
+
+      try {
+        await expect(init({ projectName: 'missing-template-test',
+          targetDir: testDir,
+          template: 'react', skipPrompts: true })).rejects.toThrow('Template directory not found');
+      } finally {
+        fs.renameSync(backupPath, reactTemplatePath);
+      }
     });
   });
 });
