@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Readable } from 'stream';
 import { init, update, createOrUpdate, __internal } from './index.js';
 
 /**
@@ -633,24 +632,17 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await init({ projectName: 'default-confirm-test',
         targetDir: testDir, skipPrompts: true });
 
-      const originalStdin = process.stdin;
-      const input = new Readable({
-        read() {
-          this.push('y\n');
-          this.push(null);
-        },
-      });
+      const originalConfirm = __internal.confirm;
 
-      Object.defineProperty(process, 'stdin', {
-        value: input,
-      });
+      // Simulate user accepting the update via the default confirm flow
+      __internal.confirm = async () => {
+        return true;
+      };
 
       try {
         await update({ targetDir: testDir, skipPrompts: false });
       } finally {
-        Object.defineProperty(process, 'stdin', {
-          value: originalStdin,
-        });
+        __internal.confirm = originalConfirm;
       }
 
       const eslintPath = path.join(testDir, 'eslint.config.js');
