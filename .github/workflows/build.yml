@@ -93,7 +93,7 @@ jobs:
         run: |
           echo "Generating SHA256 checksums for dist/ contents..."
           cd dist
-          sha256sum * > ../dist-checksums.txt
+          find . -type f | sort | xargs sha256sum > ../dist-checksums.txt
           cd ..
           echo "Checksums generated:"
           cat dist-checksums.txt
