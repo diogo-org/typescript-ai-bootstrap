@@ -27,7 +27,7 @@ jobs:
         with:
           node-version: '18'
           registry-url: 'https://npm.pkg.github.com'
-          scope: '@diogo-raphael-cravo'
+          scope: '@diogo-org'
       
       - name: Wait for artifact availability
         id: wait-artifact
