@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { init, update } from './index.js';
+import { init, update, createOrUpdate } from './index.js';
 
 /**
  * Helper to read package.json from test directory
@@ -1632,6 +1632,35 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(path.join(bareDir, '.husky'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, '.gitignore'))).toBe(true);
       expect(fs.existsSync(path.join(bareDir, 'eslint.config.js'))).toBe(true);
+    });
+  });
+
+  describe('Create Or Update', () => {
+    it('should create a project when package.json does not exist', async () => {
+      await createOrUpdate({
+        projectName: 'create-or-update-new',
+        targetDir: testDir,
+      });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      expect(fs.existsSync(packageJsonPath)).toBe(true);
+    });
+
+    it('should update a project when package.json exists', async () => {
+      await init({
+        projectName: 'create-or-update-existing',
+        targetDir: testDir,
+      });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      packageJson.customField = 'custom-value';
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      await createOrUpdate({ targetDir: testDir });
+
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.customField).toBe('custom-value');
     });
   });
 

@@ -365,6 +365,22 @@ function updatePackageJson(
 }
 
 /**
+ * Create a project or update it if it already exists
+ */
+export async function createOrUpdate(options: InitOptions & UpdateOptions = {}): Promise<void> {
+  const targetDir = options.targetDir || process.cwd();
+  const packageJsonPath = path.join(targetDir, 'package.json');
+
+  if (fs.existsSync(packageJsonPath)) {
+    console.log('\n🔎 Existing project detected. Running update...\n');
+    await update({ targetDir });
+    return;
+  }
+
+  await init(options);
+}
+
+/**
  * Update an existing project with latest template changes
  */
 export async function update(options: UpdateOptions = {}): Promise<void> {
