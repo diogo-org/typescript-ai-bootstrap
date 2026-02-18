@@ -24,8 +24,61 @@ function printStatus(passed, message) {
 
 console.log('🔍 Running pre-commit checks...\n');
 
-// Step 0: Verify package-lock.json is in sync
-console.log('Step 0: Verifying package-lock.json...');
+// Step 0: Check for version downgrades
+console.log('Step 0: Checking for version downgrades...');
+try {
+  const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
+  const currentVersion = packageJson.version;
+  
+  // Get the version from the last commit
+  let lastVersion;
+  try {
+    const lastPackageJson = execSync('git show HEAD:package.json', {
+      encoding: 'utf-8',
+      stdio: 'pipe'
+    });
+    lastVersion = JSON.parse(lastPackageJson).version;
+  } catch (error) {
+    // No previous commit (initial commit) or package.json doesn't exist in HEAD
+    // This is fine, skip the check
+    printStatus(true, 'Version check skipped (no previous version to compare)');
+    console.log('');
+  }
+  
+  if (lastVersion) {
+    // Parse semantic versions
+    const parseVersion = (v) => v.split('.').map(Number);
+    const [currMajor, currMinor, currPatch] = parseVersion(currentVersion);
+    const [lastMajor, lastMinor, lastPatch] = parseVersion(lastVersion);
+    
+    // Check if current version is lower than last version
+    const isDowngrade = 
+      currMajor < lastMajor ||
+      (currMajor === lastMajor && currMinor < lastMinor) ||
+      (currMajor === lastMajor && currMinor === lastMinor && currPatch < lastPatch);
+    
+    if (isDowngrade) {
+      printStatus(false, `Version downgrade detected: ${lastVersion} → ${currentVersion}`);
+      log(colors.yellow, '\n💡 Version downgrades are not allowed. Use one of these commands:');
+      log(colors.yellow, '   - npm run version:patch (for bug fixes)');
+      log(colors.yellow, '   - npm run version:minor (for new features)');
+      log(colors.yellow, '   - npm run version:major (for breaking changes)');
+      log(colors.red, '\n❌ Commit aborted: Never downgrade package versions');
+      process.exit(1);
+    }
+    
+    printStatus(true, `Version check passed: ${lastVersion} → ${currentVersion}`);
+    console.log('');
+  }
+} catch (error) {
+  // If we can't read package.json, let it fail in later checks
+  printStatus(false, 'Could not check version');
+  log(colors.red, '\n❌ Commit aborted: Could not read package.json');
+  process.exit(1);
+}
+
+// Step 1: Verify package-lock.json is in sync
+console.log('Step 1: Verifying package-lock.json...');
 try {
   // Check if package-lock.json exists
   if (!fs.existsSync('package-lock.json')) {
@@ -51,8 +104,8 @@ try {
 }
 console.log('');
 
-// Step 1: Run ESLint
-console.log('Step 1: Running ESLint...');
+// Step 2: Run ESLint
+console.log('Step 2: Running ESLint...');
 try {
   execSync('npm run lint', { 
     stdio: 'pipe',
@@ -68,8 +121,8 @@ try {
 }
 console.log('');
 
-// Step 2: Run tests with coverage
-console.log('Step 2: Running tests with coverage...');
+// Step 3: Run tests with coverage
+console.log('Step 3: Running tests with coverage...');
 try {
   const testOutput = execSync('npx vitest run --coverage', { 
     stdio: 'pipe',
@@ -97,8 +150,8 @@ try {
 }
 console.log('');
 
-// Step 3: Check code duplication
-console.log('Step 3: Checking code duplication...');
+// Step 4: Check code duplication
+console.log('Step 4: Checking code duplication...');
 try {
   // Run jscpd - it will exit with error code if threshold is exceeded
   execSync('npx jscpd src --reporters json --silent', { 
@@ -147,8 +200,8 @@ try {
 }
 console.log('');
 
-// Step 4: Check for secrets
-console.log('Step 4: Checking for secrets...');
+// Step 5: Check for secrets
+console.log('Step 5: Checking for secrets...');
 try {
   // Get list of staged files (excluding .husky directory to avoid false positives)
   const stagedFiles = execSync('git diff --cached --name-only', {
@@ -213,8 +266,8 @@ try {
 }
 console.log('');
 
-// Step 5: TypeScript type check
-console.log('Step 5: TypeScript type checking...');
+// Step 6: TypeScript type check
+console.log('Step 6: TypeScript type checking...');
 try {
   execSync('npx tsc --noEmit', { 
     stdio: 'pipe',
@@ -229,8 +282,8 @@ try {
 }
 console.log('');
 
-// Step 6: Build check
-console.log('Step 6: Building project...');
+// Step 7: Build check
+console.log('Step 7: Building project...');
 try {
   execSync('npm run build', { 
     stdio: 'pipe',
