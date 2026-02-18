@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { init, update } from './index.js';
+import { init, update, createOrUpdate } from './index.js';
 
 /**
  * Helper to read package.json from test directory
@@ -32,11 +32,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const projectName = 'test-project';
       const projectTitle = 'Test Project';
 
-      await init({
-        projectName,
+      await init({ projectName,
         projectTitle,
-        targetDir: testDir,
-      });
+        targetDir: testDir, skipPrompts: true });
 
       // Check that essential files are created
       const expectedFiles = [
@@ -58,10 +56,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create src directory with template files', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       // Check that src directory exists
       const srcDir = path.join(testDir, 'src');
@@ -76,10 +72,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create .github workflows directory', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const workflowsDir = path.join(testDir, '.github', 'workflows');
       expect(fs.existsSync(workflowsDir)).toBe(true);
@@ -119,10 +113,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy eslint.config.js during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const eslintConfigPath = path.join(testDir, 'eslint.config.js');
       expect(fs.existsSync(eslintConfigPath), 'eslint.config.js should exist').toBe(true);
@@ -134,10 +126,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy vitest.config.ts during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const vitestConfigPath = path.join(testDir, 'vitest.config.ts');
       expect(fs.existsSync(vitestConfigPath), 'vitest.config.ts should exist').toBe(true);
@@ -149,10 +139,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should register test.setup.ts in vitest config', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const vitestConfigPath = path.join(testDir, 'vitest.config.ts');
       const vitestContent = fs.readFileSync(vitestConfigPath, 'utf-8');
@@ -161,10 +149,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy tsconfig.json during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const tsconfigPath = path.join(testDir, 'tsconfig.json');
       expect(fs.existsSync(tsconfigPath), 'tsconfig.json should exist').toBe(true);
@@ -175,10 +161,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy src/test.setup.ts during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const testSetupPath = path.join(testDir, 'src', 'test.setup.ts');
       expect(fs.existsSync(testSetupPath), 'src/test.setup.ts should exist').toBe(true);
@@ -189,10 +173,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy .gitignore during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const gitignorePath = path.join(testDir, '.gitignore');
       expect(fs.existsSync(gitignorePath), '.gitignore should exist').toBe(true);
@@ -207,11 +189,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const projectName = 'my-awesome-project';
       const projectTitle = 'My Awesome Project Title';
 
-      await init({
-        projectName,
+      await init({ projectName,
         projectTitle,
-        targetDir: testDir,
-      });
+        targetDir: testDir, skipPrompts: true });
 
       const packageJsonPath = path.join(testDir, 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -224,11 +204,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const projectName = 'test-readme-project';
       const projectTitle = 'Test Readme Project Title';
 
-      await init({
-        projectName,
+      await init({ projectName,
         projectTitle,
-        targetDir: testDir,
-      });
+        targetDir: testDir, skipPrompts: true });
 
       const readmePath = path.join(testDir, 'README.md');
       const readmeContent = fs.readFileSync(readmePath, 'utf-8');
@@ -239,10 +217,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should copy .gitignore from root during initialization', async () => {
-      await init({
-        projectName: 'test-project',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'test-project',
+        targetDir: testDir, skipPrompts: true });
 
       const gitignorePath = path.join(testDir, '.gitignore');
       expect(fs.existsSync(gitignorePath)).toBe(true);
@@ -254,10 +230,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create a project that has valid package.json', async () => {
-      await init({
-        projectName: 'valid-package-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'valid-package-test',
+        targetDir: testDir, skipPrompts: true });
 
       const packageJsonPath = path.join(testDir, 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -281,9 +255,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       process.chdir(projectDir);
 
       try {
-        await init({
-          targetDir: projectDir,
-        });
+        await init({ targetDir: projectDir, skipPrompts: true });
 
         const packageJsonPath = path.join(projectDir, 'package.json');
         const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -295,10 +267,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create all configuration files with valid syntax', async () => {
-      await init({
-        projectName: 'config-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'config-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Test that tsconfig.json is valid JSON
       const tsconfigPath = path.join(testDir, 'tsconfig.json');
@@ -318,10 +288,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
   describe('Project Structure', () => {
     it('should create proper directory structure', async () => {
-      await init({
-        projectName: 'structure-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'structure-test',
+        targetDir: testDir, skipPrompts: true });
 
       const expectedDirs = [
         'src',
@@ -339,10 +307,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
   describe('Template Types', () => {
     it('should initialize with react template by default', async () => {
-      await init({
-        projectName: 'default-template-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'default-template-test',
+        targetDir: testDir, skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
 
@@ -353,11 +319,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should initialize with typescript template when specified', async () => {
-      await init({
-        projectName: 'typescript-template-test',
+      await init({ projectName: 'typescript-template-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
 
@@ -372,11 +336,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should initialize with react template when specified', async () => {
-      await init({
-        projectName: 'react-template-test',
+      await init({ projectName: 'react-template-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
 
@@ -388,11 +350,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create main.ts for typescript template', async () => {
-      await init({
-        projectName: 'typescript-entry-test',
+      await init({ projectName: 'typescript-entry-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const mainTsPath = path.join(testDir, 'src', 'main.ts');
 
@@ -404,11 +364,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create main.tsx for react template', async () => {
-      await init({
-        projectName: 'react-entry-test',
+      await init({ projectName: 'react-entry-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       const mainTsxPath = path.join(testDir, 'src', 'main.tsx');
       const indexHtmlPath = path.join(testDir, 'index.html');
@@ -421,11 +379,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should throw error for invalid template type', async () => {
-      await expect(init({
-        projectName: 'invalid-template-test',
+      await expect(init({ projectName: 'invalid-template-test',
         targetDir: testDir,
-        template: 'invalid-template' as any,
-      })).rejects.toThrow();
+        template: 'invalid-template' as any, skipPrompts: true })).rejects.toThrow();
     });
 
     it('should have templates/typescript directory structure', () => {
@@ -441,11 +397,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create typescript template with tsx dependency', async () => {
-      await init({
-        projectName: 'tsx-test',
+      await init({ projectName: 'tsx-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
 
@@ -455,11 +409,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create typescript template with correct dev script', async () => {
-      await init({
-        projectName: 'dev-script-test',
+      await init({ projectName: 'dev-script-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
 
@@ -472,20 +424,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // Create React project
       const reactDir = path.join(testDir, 'react-project');
       fs.mkdirSync(reactDir, { recursive: true });
-      await init({
-        projectName: 'react-scripts-test',
+      await init({ projectName: 'react-scripts-test',
         targetDir: reactDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Create TypeScript project
       const tsDir = path.join(testDir, 'ts-project');
       fs.mkdirSync(tsDir, { recursive: true });
-      await init({
-        projectName: 'ts-scripts-test',
+      await init({ projectName: 'ts-scripts-test',
         targetDir: tsDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const reactPkg = JSON.parse(fs.readFileSync(path.join(reactDir, 'package.json'), 'utf-8'));
       const tsPkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf-8'));
@@ -504,11 +452,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create typescript template with Node.js-style main.ts', async () => {
-      await init({
-        projectName: 'node-main-test',
+      await init({ projectName: 'node-main-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const mainTsPath = path.join(testDir, 'src', 'main.ts');
       const mainContent = fs.readFileSync(mainTsPath, 'utf-8');
@@ -520,11 +466,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should create react template with DOM-based main.tsx', async () => {
-      await init({
-        projectName: 'dom-main-test',
+      await init({ projectName: 'dom-main-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       const mainTsxPath = path.join(testDir, 'src', 'main.tsx');
       const mainContent = fs.readFileSync(mainTsxPath, 'utf-8');
@@ -539,11 +483,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // TypeScript template
       const tsDir = path.join(testDir, 'ts-metadata');
       fs.mkdirSync(tsDir, { recursive: true });
-      await init({
-        projectName: 'ts-metadata-test',
+      await init({ projectName: 'ts-metadata-test',
         targetDir: tsDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const tsPkg = JSON.parse(fs.readFileSync(path.join(tsDir, 'package.json'), 'utf-8'));
       expect(tsPkg.typescriptBootstrap).toBeDefined();
@@ -552,11 +494,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       // React template
       const reactDir = path.join(testDir, 'react-metadata');
       fs.mkdirSync(reactDir, { recursive: true });
-      await init({
-        projectName: 'react-metadata-test',
+      await init({ projectName: 'react-metadata-test',
         targetDir: reactDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       const reactPkg = JSON.parse(fs.readFileSync(path.join(reactDir, 'package.json'), 'utf-8'));
       expect(reactPkg.typescriptBootstrap).toBeDefined();
@@ -567,16 +507,14 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
   describe('Project Update', () => {
     it('should fail when no package.json exists', async () => {
       // Try to update a directory without package.json
-      await expect(update({ targetDir: testDir })).rejects.toThrow();
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow();
     });
 
     it('should update an existing project successfully', async () => {
       // First, create a project
       const projectName = 'update-test';
-      await init({
-        projectName,
-        targetDir: testDir,
-      });
+      await init({ projectName,
+        targetDir: testDir, skipPrompts: true });
 
       // Modify a file to simulate user changes
       const packageJsonPath = path.join(testDir, 'package.json');
@@ -585,7 +523,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify the project still exists
       expect(fs.existsSync(packageJsonPath)).toBe(true);
@@ -598,17 +536,15 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should update UPDATABLE_FILES configuration files', async () => {
       // Create a project first
-      await init({
-        projectName: 'config-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'config-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Modify a configuration file
       const tsconfigPath = path.join(testDir, 'tsconfig.json');
       fs.writeFileSync(tsconfigPath, '{"modified": true}');
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify configuration files are updated from template
       const updatedTsconfig = fs.readFileSync(tsconfigPath, 'utf-8');
@@ -633,10 +569,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should merge package.json without overwriting custom fields', async () => {
       // Create a project
-      await init({
-        projectName: 'merge-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'merge-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Add custom fields to package.json
       const packageJsonPath = path.join(testDir, 'package.json');
@@ -648,7 +582,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify custom fields are preserved
       const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -664,10 +598,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy .github/workflows during update', async () => {
       // Create a project
-      await init({
-        projectName: 'workflow-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'workflow-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete workflows to simulate old project
       const workflowsDir = path.join(testDir, '.github', 'workflows');
@@ -676,7 +608,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify workflows are copied (excluding publish.yml)
       expect(fs.existsSync(workflowsDir)).toBe(true);
@@ -692,10 +624,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy .github/copilot-instructions.md during update', async () => {
       // Create a project
-      await init({
-        projectName: 'copilot-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'copilot-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete copilot-instructions to simulate old project
       const copilotPath = path.join(testDir, '.github', 'copilot-instructions.md');
@@ -704,7 +634,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify copilot-instructions.md is copied
       expect(fs.existsSync(copilotPath)).toBe(true);
@@ -717,10 +647,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy .husky directory during update', async () => {
       // Create a project
-      await init({
-        projectName: 'husky-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'husky-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete .husky to simulate old project
       const huskyDir = path.join(testDir, '.husky');
@@ -729,7 +657,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify .husky directory is copied
       expect(fs.existsSync(huskyDir)).toBe(true);
@@ -743,10 +671,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy scripts directory during update', async () => {
       // Create a project
-      await init({
-        projectName: 'scripts-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'scripts-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete scripts to simulate old project
       const scriptsDir = path.join(testDir, 'scripts');
@@ -755,7 +681,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify scripts directory is copied
       expect(fs.existsSync(scriptsDir)).toBe(true);
@@ -770,10 +696,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy eslint.config.js during update', async () => {
       // Create a project
-      await init({
-        projectName: 'eslint-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'eslint-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete eslint.config.js to simulate old project
       const eslintPath = path.join(testDir, 'eslint.config.js');
@@ -782,7 +706,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify eslint.config.js is copied
       expect(fs.existsSync(eslintPath)).toBe(true);
@@ -795,10 +719,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy vitest.config.ts during update', async () => {
       // Create a project
-      await init({
-        projectName: 'vitest-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'vitest-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete vitest.config.ts to simulate old project
       const vitestPath = path.join(testDir, 'vitest.config.ts');
@@ -807,7 +729,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify vitest.config.ts is copied
       expect(fs.existsSync(vitestPath)).toBe(true);
@@ -820,17 +742,15 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy tsconfig.json during update', async () => {
       // Create a project
-      await init({
-        projectName: 'tsconfig-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'tsconfig-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Modify tsconfig.json to simulate old project
       const tsconfigPath = path.join(testDir, 'tsconfig.json');
       fs.writeFileSync(tsconfigPath, '{"old": true}');
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify tsconfig.json is updated
       expect(fs.existsSync(tsconfigPath)).toBe(true);
@@ -843,10 +763,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should copy .gitignore during update', async () => {
       // Create a project
-      await init({
-        projectName: 'gitignore-update-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'gitignore-update-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Delete .gitignore to simulate old project
       const gitignorePath = path.join(testDir, '.gitignore');
@@ -855,7 +773,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify .gitignore is copied
       expect(fs.existsSync(gitignorePath)).toBe(true);
@@ -868,10 +786,8 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should preserve user\'s custom src/ directory', async () => {
       // Create a project
-      await init({
-        projectName: 'src-preserve-test',
-        targetDir: testDir,
-      });
+      await init({ projectName: 'src-preserve-test',
+        targetDir: testDir, skipPrompts: true });
 
       // Add custom files to src/
       const customFilePath = path.join(testDir, 'src', 'custom.ts');
@@ -884,7 +800,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(testSetupPath, modifiedContent);
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify custom file is preserved
       expect(fs.existsSync(customFilePath)).toBe(true);
@@ -909,7 +825,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       );
 
       // Update should work and create .github directory
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify .github/workflows was created (excluding publish.yml)
       const workflowsDir = path.join(testDir, '.github', 'workflows');
@@ -928,11 +844,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
 
     it('should preserve template type in package.json during init', async () => {
-      await init({
-        projectName: 'template-metadata-test',
+      await init({ projectName: 'template-metadata-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJsonPath = path.join(testDir, 'package.json');
       const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -944,11 +858,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should use correct template during update based on stored metadata', async () => {
       // Create TypeScript template project
-      await init({
-        projectName: 'typescript-update-test',
+      await init({ projectName: 'typescript-update-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJsonPath = path.join(testDir, 'package.json');
       let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -962,7 +874,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Read updated package.json
       packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -975,11 +887,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should use correct template during update for React projects', async () => {
       // Create React template project
-      await init({
-        projectName: 'react-update-test',
+      await init({ projectName: 'react-update-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       const packageJsonPath = path.join(testDir, 'package.json');
       let packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -993,7 +903,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update the project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Read updated package.json
       packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -1006,11 +916,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should update ALL relevant files when update command runs', async () => {
       // Create a React project
-      await init({
-        projectName: 'comprehensive-update-test',
+      await init({ projectName: 'comprehensive-update-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Simulate old/modified versions of ALL updatable files
       const filesToModify = [
@@ -1044,7 +952,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Run update
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify ALL files are updated
       // 1. tsconfig.node.json should be updated
@@ -1127,7 +1035,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(testSetupPath, modifiedTestSetup);
 
       // Run update again
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify custom modification is still there
       const finalTestSetup = fs.readFileSync(testSetupPath, 'utf-8');
@@ -1136,11 +1044,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should update ALL relevant files for TypeScript template project', async () => {
       // Create a TypeScript project (not React)
-      await init({
-        projectName: 'comprehensive-typescript-update-test',
+      await init({ projectName: 'comprehensive-typescript-update-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Simulate old/modified versions of ALL updatable files
       const filesToModify = [
@@ -1159,7 +1065,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Run update
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify ALL files are updated
       const tsconfigNodeContent = fs.readFileSync(path.join(testDir, 'tsconfig.node.json'), 'utf-8');
@@ -1201,11 +1107,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       ];
 
       // Create a project
-      await init({
-        projectName: 'updatable-files-test',
+      await init({ projectName: 'updatable-files-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Modify all expected updatable files
       for (const file of expectedUpdatableFiles) {
@@ -1221,7 +1125,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(mainTsxPath, originalMainTsx + '\n// USER MODIFICATION');
 
       // Run update
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify all UPDATABLE_FILES were updated
       for (const file of expectedUpdatableFiles) {
@@ -1239,11 +1143,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should throw error when updating project with corrupted template directory', async () => {
       // Create a project first
-      await init({
-        projectName: 'corrupted-template-test',
+      await init({ projectName: 'corrupted-template-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Modify package.json to reference a non-existent template
       const packageJsonPath = path.join(testDir, 'package.json');
@@ -1252,16 +1154,14 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update should throw error about missing template
-      await expect(update({ targetDir: testDir })).rejects.toThrow(/Template "non-existent-template" not found/);
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow(/Template "non-existent-template" not found/);
     });
 
     it('should handle error during init gracefully', async () => {
       // Try to initialize with an invalid template that will cause an error
-      await expect(init({
-        projectName: 'error-test',
+      await expect(init({ projectName: 'error-test',
         targetDir: testDir,
-        template: 'invalid' as any,
-      })).rejects.toThrow(/Invalid template/);
+        template: 'invalid' as any, skipPrompts: true })).rejects.toThrow(/Invalid template/);
     });
 
     it('should throw error when copying files fails during init', async () => {
@@ -1270,20 +1170,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(srcPath, 'this is a file, not a directory', 'utf-8');
 
       // Init should fail when trying to create src directory
-      await expect(init({
-        projectName: 'copy-error-test',
+      await expect(init({ projectName: 'copy-error-test',
         targetDir: testDir,
-        template: 'react',
-      })).rejects.toThrow();
+        template: 'react', skipPrompts: true })).rejects.toThrow();
     });
 
     it('should create nested directories during update if they don\'t exist', async () => {
       // Create a minimal project
-      await init({
-        projectName: 'nested-dir-test',
+      await init({ projectName: 'nested-dir-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Remove husky files to force directory recreation during update
       const huskyDir = path.join(testDir, '.husky');
@@ -1292,7 +1188,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }
 
       // Update should recreate the directory structure
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify .husky directory and files were recreated (Husky v9 structure)
       expect(fs.existsSync(huskyDir)).toBe(true);
@@ -1302,11 +1198,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should maintain typescript template with tsx dependency after update', async () => {
       // Create TypeScript project
-      await init({
-        projectName: 'tsx-update-test',
+      await init({ projectName: 'tsx-update-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify initial state
       let packageJson = readPackageJson(testDir);
@@ -1317,7 +1211,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify tsx is restored
       packageJson = readPackageJson(testDir);
@@ -1327,11 +1221,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should maintain typescript template scripts after update', async () => {
       // Create TypeScript project
-      await init({
-        projectName: 'ts-scripts-update-test',
+      await init({ projectName: 'ts-scripts-update-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify initial scripts
       let packageJson = readPackageJson(testDir);
@@ -1344,7 +1236,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify scripts are restored correctly
       packageJson = readPackageJson(testDir);
@@ -1355,11 +1247,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should maintain react template dependencies after update', async () => {
       // Create React project
-      await init({
-        projectName: 'react-deps-update-test',
+      await init({ projectName: 'react-deps-update-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Verify initial state
       let packageJson = readPackageJson(testDir);
@@ -1373,7 +1263,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(path.join(testDir, 'package.json'), JSON.stringify(packageJson, null, 2));
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify React deps are restored
       packageJson = readPackageJson(testDir);
@@ -1385,11 +1275,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should not add React dependencies to typescript template during update', async () => {
       // Create TypeScript project
-      await init({
-        projectName: 'no-react-contamination-test',
+      await init({ projectName: 'no-react-contamination-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify no React deps initially
       let packageJson = readPackageJson(testDir);
@@ -1397,7 +1285,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(packageJson.devDependencies).not.toHaveProperty('@vitejs/plugin-react');
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify still no React deps after update
       packageJson = readPackageJson(testDir);
@@ -1409,18 +1297,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should not add tsx to react template during update', async () => {
       // Create React project
-      await init({
-        projectName: 'no-tsx-contamination-test',
+      await init({ projectName: 'no-tsx-contamination-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Verify tsx not present initially (React doesn't need it)
       let packageJson = readPackageJson(testDir);
       expect(packageJson.devDependencies).not.toHaveProperty('tsx');
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify tsx still not present after update
       packageJson = readPackageJson(testDir);
@@ -1430,11 +1316,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should preserve index.html for react template during update', async () => {
       // Create React project
-      await init({
-        projectName: 'react-html-update-test',
+      await init({ projectName: 'react-html-update-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Verify index.html exists
       const indexHtmlPath = path.join(testDir, 'index.html');
@@ -1444,7 +1328,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(indexHtmlPath, '<html><body>old</body></html>');
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify index.html is updated
       expect(fs.existsSync(indexHtmlPath)).toBe(true);
@@ -1455,18 +1339,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should not create index.html for typescript template during update', async () => {
       // Create TypeScript project
-      await init({
-        projectName: 'ts-no-html-update-test',
+      await init({ projectName: 'ts-no-html-update-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify index.html doesn't exist
       const indexHtmlPath = path.join(testDir, 'index.html');
       expect(fs.existsSync(indexHtmlPath)).toBe(false);
 
       // Update project
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify index.html still doesn't exist
       expect(fs.existsSync(indexHtmlPath)).toBe(false);
@@ -1474,28 +1356,24 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should throw error when target package.json is corrupted during update', async () => {
       // Create a valid project first
-      await init({
-        projectName: 'corrupted-pkg-test',
+      await init({ projectName: 'corrupted-pkg-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Corrupt the package.json
       const packageJsonPath = path.join(testDir, 'package.json');
       fs.writeFileSync(packageJsonPath, '{ invalid json content', 'utf-8');
 
       // Update should throw error about invalid  JSON
-      await expect(update({ targetDir: testDir })).rejects.toThrow(/Failed to parse package\.json/);
-      await expect(update({ targetDir: testDir })).rejects.toThrow(/valid JSON format/);
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow(/Failed to parse package\.json/);
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow(/valid JSON format/);
     });
 
     it('should add typescriptBootstrap metadata when updating old project without it', async () => {
       // Create a project
-      await init({
-        projectName: 'old-project-test',
+      await init({ projectName: 'old-project-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Remove typescriptBootstrap metadata to simulate old project
       const packageJsonPath = path.join(testDir, 'package.json');
@@ -1504,7 +1382,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update should add metadata
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify metadata was added
       const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -1514,11 +1392,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should update project created without dependencies field', async () => {
       // Create TypeScript project (has no dependencies)
-      await init({
-        projectName: 'no-deps-test',
+      await init({ projectName: 'no-deps-test',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Remove dependencies field entirely
       const packageJsonPath = path.join(testDir, 'package.json');
@@ -1527,7 +1403,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
       // Update should handle missing dependencies gracefully
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify update succeeded
       const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
@@ -1536,18 +1412,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should handle error that is not Error instanceof during package.json parse', async () => {
       // Create a valid project first
-      await init({
-        projectName: 'non-error-test',
+      await init({ projectName: 'non-error-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Corrupt the package.json with invalid JSON that will throw a non-Error object
       const packageJsonPath = path.join(testDir, 'package.json');
       fs.writeFileSync(packageJsonPath, '{ "name": undefined }', 'utf-8');
 
       // Update should throw error
-      await expect(update({ targetDir: testDir })).rejects.toThrow(/Failed to parse package\.json/);
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow(/Failed to parse package\.json/);
     });
 
     it('should handle update failure and rethrow error', async () => {
@@ -1563,18 +1437,16 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       }), 'utf-8');
 
       // Update should fail and catch block should execute
-      await expect(update({ targetDir: invalidDir })).rejects.toThrow();
+      await expect(update({ targetDir: invalidDir, skipPrompts: true })).rejects.toThrow();
     });
 
     it('should create nested directory structure when copying files during init', async () => {
       // Use a deeply nested directory that doesn't exist
       const deepDir = path.join(testDir, 'level1', 'level2', 'level3', 'project');
       
-      await init({
-        projectName: 'deep-dir-test',
+      await init({ projectName: 'deep-dir-test',
         targetDir: deepDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Verify the deep directory structure was created
       expect(fs.existsSync(deepDir)).toBe(true);
@@ -1585,11 +1457,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should create missing subdirectories during update', async () => {
       // Create a project first
-      await init({
-        projectName: 'missing-subdirs-test',
+      await init({ projectName: 'missing-subdirs-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Delete .github directory completely
       const githubDir = path.join(testDir, '.github');
@@ -1601,7 +1471,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(githubDir)).toBe(false);
 
       // Update should recreate .github and its subdirectories
-      await update({ targetDir: testDir });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       // Verify directories were recreated
       expect(fs.existsSync(path.join(testDir, '.github', 'workflows'))).toBe(true);
@@ -1618,11 +1488,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(files.length).toBe(0);
 
       // Initialize should create all subdirectories
-      await init({
-        projectName: 'bare-init-test',
+      await init({ projectName: 'bare-init-test',
         targetDir: bareDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify all expected directories and files were created
       expect(fs.existsSync(path.join(bareDir, 'package.json'))).toBe(true);
@@ -1635,33 +1503,52 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
     });
   });
 
+  describe('Create Or Update', () => {
+    it('should create a project when package.json does not exist', async () => {
+      await createOrUpdate({ projectName: 'create-or-update-new',
+        targetDir: testDir, skipPrompts: true });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      expect(fs.existsSync(packageJsonPath)).toBe(true);
+    });
+
+    it('should update a project when package.json exists', async () => {
+      await init({ projectName: 'create-or-update-existing',
+        targetDir: testDir, skipPrompts: true });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      packageJson.customField = 'custom-value';
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
+
+      await createOrUpdate({ targetDir: testDir, skipPrompts: true });
+
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.customField).toBe('custom-value');
+    });
+  });
+
   describe('Error Handling', () => {
     it('should throw error when invalid template is specified', async () => {
       await expect(
-        init({
-          projectName: 'test-project',
+        init({ projectName: 'test-project',
           targetDir: testDir,
-          template: 'nonexistent-template' as any,
-        })
+          template: 'nonexistent-template' as any, skipPrompts: true })
       ).rejects.toThrow('Invalid template: nonexistent-template');
     });
 
     it('should throw error when target package.json is invalid', async () => {
       // Initialize a valid project first
-      await init({
-        projectName: 'test-project',
+      await init({ projectName: 'test-project',
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Corrupt the package.json
       const packagePath = path.join(testDir, 'package.json');
       fs.writeFileSync(packagePath, '{ invalid json }', 'utf-8');
 
       await expect(
-        update({
-          targetDir: testDir,
-        })
+        update({ targetDir: testDir, skipPrompts: true })
       ).rejects.toThrow('Failed to parse package.json');
     });
 
@@ -1670,9 +1557,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const nonExistentDir = path.join(testDir, 'does-not-exist');
 
       await expect(
-        update({
-          targetDir: nonExistentDir,
-        })
+        update({ targetDir: nonExistentDir, skipPrompts: true })
       ).rejects.toThrow();
     });
 
@@ -1682,9 +1567,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       fs.mkdirSync(bareDir, { recursive: true });
 
       await expect(
-        update({
-          targetDir: bareDir,
-        })
+        update({ targetDir: bareDir, skipPrompts: true })
       ).rejects.toThrow();
     });
 
@@ -1693,11 +1576,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const deepDir = path.join(testDir, 'level1', 'level2', 'level3', 'project');
       
       // Don't create it - let init create all levels
-      await init({
-        projectName: 'deep-project',
+      await init({ projectName: 'deep-project',
         targetDir: deepDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       // Verify project was created successfully
       expect(fs.existsSync(path.join(deepDir, 'package.json'))).toBe(true);
@@ -1706,11 +1587,9 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
 
     it('should handle init then update cycle with file cleanup', async () => {
       // Initialize project
-      await init({
-        projectName: 'cycle-test',
+      await init({ projectName: 'cycle-test',
         targetDir: testDir,
-        template: 'react',
-      });
+        template: 'react', skipPrompts: true });
 
       // Remove a config file that should be restored by update
       const vitePath = path.join(testDir, 'vite.config.ts');
@@ -1719,9 +1598,7 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(fs.existsSync(vitePath)).toBe(false);
 
       // Update should restore it
-      await update({
-        targetDir: testDir,
-      });
+      await update({ targetDir: testDir, skipPrompts: true });
 
       expect(fs.existsSync(vitePath)).toBe(true);
     });
@@ -1731,12 +1608,10 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const projectName = 'test-$1-project';
       const projectTitle = 'Test $& Title';
 
-      await init({
-        projectName,
+      await init({ projectName,
         projectTitle,
         targetDir: testDir,
-        template: 'typescript',
-      });
+        template: 'typescript', skipPrompts: true });
 
       const packageJson = readPackageJson(testDir);
       expect(packageJson.name).toBe('test-$1-project');
