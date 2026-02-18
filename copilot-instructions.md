@@ -60,14 +60,16 @@ Root `package.json` must include shared directories (`.github/`, `.husky/`, etc.
 
 ### 1. Pre-commit Hooks (Most Important!)
 
-The `.husky/pre-commit.cjs` script is the heart of this template. It runs 6 checks:
+The `.husky/pre-commit.cjs` script is the heart of this template. It runs 7 checks:
 
-1. **ESLint** - Code style and quality
-2. **Tests with Coverage** - Must pass with ≥80% coverage
-3. **Code Duplication** - Maximum 1% duplication
-4. **Secrets Detection** - No API keys, tokens, or passwords
-5. **TypeScript** - No type errors
-6. **Build** - Production build must succeed
+0. **Version Downgrade Prevention** - Never allow version downgrades
+1. **Package Lock Validation** - Ensure package-lock.json is valid and in sync
+2. **ESLint** - Code style and quality
+3. **Tests with Coverage** - Must pass with ≥80% coverage
+4. **Code Duplication** - Maximum 1% duplication
+5. **Secrets Detection** - No API keys, tokens, or passwords
+6. **TypeScript** - No type errors
+7. **Build** - Production build must succeed
 
 **Never modify these thresholds without good reason.** They ensure quality.
 
@@ -81,6 +83,41 @@ The `.husky/pre-commit.cjs` script is the heart of this template. It runs 6 chec
 ### 3. Template Structure
 
 Files in `templates/` are copied to new projects when `typescript-bootstrap` is run.
+
+## Version Management
+
+### Version Bump Rules - CRITICAL ⚠️
+
+**Version downgrades are strictly forbidden and will be blocked by pre-commit hooks.**
+
+**Rules:**
+- ✅ **ALWAYS increment versions** using npm version commands
+- ❌ **NEVER manually downgrade** version numbers in package.json
+- ✅ Use semantic versioning (semver): MAJOR.MINOR.PATCH
+
+**How to bump versions:**
+
+```bash
+# For bug fixes (1.2.3 → 1.2.4)
+npm run version:patch
+
+# For new features (1.2.3 → 1.3.0)
+npm run version:minor
+
+# For breaking changes (1.2.3 → 2.0.0)
+npm run version:major
+```
+
+**Why this matters:**
+- Downgrades break dependency management and confuse package managers
+- Published packages cannot be unpublished, so version errors are permanent
+- Semantic versioning is a contract with users about compatibility
+- Pre-commit hooks enforce this rule automatically
+
+**The pre-commit hook will:**
+- Compare current version with the version in HEAD (last commit)
+- Block commits if version is lower than the previous version
+- Provide helpful error messages with correct commands to use
 
 ## Code Standards
 
