@@ -228,7 +228,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
     console.log('  1. typescript - Pure TypeScript project');
     console.log('  2. react - React + TypeScript project\n');
     
-    const promptInput = options.prompt ?? prompt;
+    const promptInput = options.prompt ?? __internal.prompt;
     const choice = await promptInput('Choose a template (1 or 2): ');
     
     if (choice === '1') {
@@ -436,8 +436,52 @@ export async function createOrUpdate(options: InitOptions & UpdateOptions = {}):
   const packageJsonPath = path.join(targetDir, 'package.json');
 
   if (fs.existsSync(packageJsonPath)) {
-    console.log('\n🔎 Existing project detected. Running update...\n');
-    await update({ targetDir, skipPrompts: options.skipPrompts });
+    let packageJsonContent: string;
+    let packageJson: Record<string, unknown>;
+
+    try {
+      packageJsonContent = fs.readFileSync(packageJsonPath, 'utf-8');
+      packageJson = JSON.parse(packageJsonContent);
+    } catch {
+      throw new Error(
+        `Found existing package.json at ${packageJsonPath}, but it could not be parsed. ` +
+          'Aborting update to avoid corrupting an existing project. Please ensure package.json is valid JSON.'
+      );
+    }
+
+    // Only auto-update when this is a recognized TypeScript Bootstrap project
+    if (packageJson && packageJson.typescriptBootstrap) {
+      console.log('\n🔎 Existing TypeScript Bootstrap project detected. Running update...\n');
+      await update({ ...options, targetDir });
+      return;
+    }
+
+    // Non-bootstrap project detected. Require explicit opt-in to proceed.
+    if (options.skipPrompts) {
+      throw new Error(
+        'Existing package.json found, but no TypeScript Bootstrap metadata was detected.\n' +
+          'Refusing to update a non-bootstrap project when prompts are disabled, to avoid overwriting configuration.\n' +
+          'If you really want to apply the TypeScript Bootstrap template here, re-run without --skip-prompts ' +
+          'and explicitly confirm the update, or run init in an empty/new directory.'
+      );
+    }
+
+    const promptInput = options.prompt ?? __internal.prompt;
+    const answer = (await promptInput(
+      'An existing project (without TypeScript Bootstrap metadata) was found in this directory.\n' +
+        'Running an update here may overwrite configuration files (tsconfig, Vite config, ESLint, etc.).\n' +
+        'Do you still want to run the update using the selected template? (y/N) '
+    ))
+      .trim()
+      .toLowerCase();
+
+    if (answer === 'y' || answer === 'yes') {
+      console.log('\n⚠️  Proceeding to update existing non-bootstrap project...\n');
+      await update({ ...options, targetDir });
+      return;
+    }
+
+    console.log('\nAborting update. No changes were made to the existing project.\n');
     return;
   }
 
@@ -481,7 +525,7 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
   // Prompt for confirmation before proceeding (AI-friendly: skip if skipPrompts is true)
   if (!options.skipPrompts) {
-    const confirmPrompt = options.confirm ?? confirm;
+    const confirmPrompt = options.confirm ?? __internal.confirm;
     const shouldProceed = await confirmPrompt('Do you want to proceed with the update?');
     
     if (!shouldProceed) {

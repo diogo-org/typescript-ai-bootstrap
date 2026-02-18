@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { Readable } from 'stream';
 import { init, update, createOrUpdate, __internal } from './index.js';
 
 /**
@@ -633,24 +632,17 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       await init({ projectName: 'default-confirm-test',
         targetDir: testDir, skipPrompts: true });
 
-      const originalStdin = process.stdin;
-      const input = new Readable({
-        read() {
-          this.push('y\n');
-          this.push(null);
-        },
-      });
+      const originalConfirm = __internal.confirm;
 
-      Object.defineProperty(process, 'stdin', {
-        value: input,
-      });
+      // Simulate user accepting the update via the default confirm flow
+      __internal.confirm = async () => {
+        return true;
+      };
 
       try {
         await update({ targetDir: testDir, skipPrompts: false });
       } finally {
-        Object.defineProperty(process, 'stdin', {
-          value: originalStdin,
-        });
+        __internal.confirm = originalConfirm;
       }
 
       const eslintPath = path.join(testDir, 'eslint.config.js');
@@ -1765,6 +1757,79 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       } finally {
         process.chdir(originalCwd);
       }
+    });
+
+    it('should throw error when package.json in createOrUpdate is not parseable', async () => {
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, '{ invalid json }', 'utf-8');
+
+      await expect(
+        createOrUpdate({ targetDir: testDir, skipPrompts: true })
+      ).rejects.toThrow('but it could not be parsed');
+    });
+
+    it('should throw error when non-bootstrap project is detected with skipPrompts', async () => {
+      // Create a non-bootstrap package.json (without typescriptBootstrap metadata)
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, JSON.stringify({
+        name: 'existing-project',
+        version: '1.0.0'
+      }, null, 2), 'utf-8');
+
+      await expect(
+        createOrUpdate({ targetDir: testDir, skipPrompts: true })
+      ).rejects.toThrow('no TypeScript Bootstrap metadata was detected');
+    });
+
+    it('should prompt and update when non-bootstrap project user confirms', async () => {
+      // Create a non-bootstrap package.json
+      const packageJsonPath = path.join(testDir, 'package.json');
+      fs.writeFileSync(packageJsonPath, JSON.stringify({
+        name: 'existing-non-bootstrap',
+        version: '1.0.0'
+      }, null, 2), 'utf-8');
+
+      // Mock prompt to simulate user saying 'yes'
+      const mockPrompt = async () => {
+        return 'y';
+      };
+
+      await createOrUpdate({ 
+        targetDir: testDir, 
+        skipPrompts: false,
+        prompt: mockPrompt,
+        confirm: async () => true
+      });
+
+      // Verify project was updated with TypeScript Bootstrap metadata
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeDefined();
+    });
+
+    it('should abort when non-bootstrap project user declines', async () => {
+      // Create a non-bootstrap package.json
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const originalContent = JSON.stringify({
+        name: 'existing-non-bootstrap',
+        version: '1.0.0'
+      }, null, 2);
+      fs.writeFileSync(packageJsonPath, originalContent, 'utf-8');
+
+      // Mock prompt to simulate user saying 'no'
+      const mockPrompt = async () => {
+        return 'n';
+      };
+
+      await createOrUpdate({ 
+        targetDir: testDir, 
+        skipPrompts: false,
+        prompt: mockPrompt
+      });
+
+      // Verify project was NOT updated (no TypeScript Bootstrap metadata)
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeUndefined();
+      expect(updatedPackageJson.name).toBe('existing-non-bootstrap');
     });
   });
 
