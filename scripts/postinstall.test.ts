@@ -4,11 +4,10 @@ import * as path from 'path';
 import * as os from 'os';
 const postinstallModule = require('./postinstall.cjs');
 
-const { autoInitOnInstall, hasDependency, isFreshDirectory, loadCreateOrUpdate } = postinstallModule as {
+const { autoInitOnInstall, hasDependency, isFreshDirectory } = postinstallModule as {
   autoInitOnInstall: (deps?: Record<string, unknown>) => Promise<number>;
   hasDependency: (packageJson: Record<string, unknown>) => boolean;
   isFreshDirectory: (entries: string[]) => boolean;
-  loadCreateOrUpdate: () => Promise<(options: Record<string, unknown>) => Promise<void>>;
 };
 
 describe('postinstall.cjs', () => {
@@ -365,11 +364,6 @@ describe('postinstall.cjs', () => {
     it('isFreshDirectory returns false for non-fresh directory', () => {
       const entries = ['package.json', 'src', 'README.md'];
       expect(isFreshDirectory(entries)).toBe(false);
-    });
-
-    it('loadCreateOrUpdate returns a function', async () => {
-      const createOrUpdate = await loadCreateOrUpdate();
-      expect(typeof createOrUpdate).toBe('function');
     });
 
     it('calls bootstrapProject with correct args when metadata exists', async () => {
