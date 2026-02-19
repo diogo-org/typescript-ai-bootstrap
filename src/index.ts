@@ -2,9 +2,102 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import * as readline from 'readline';
+import { createHash } from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const HASH_ALGORITHM = 'sha256';
+const HASH_MANIFEST_RELATIVE_PATH = '.github/typescript-bootstrap-hashes.json';
+const PUBLISH_WORKFLOW_FILE = 'publish.yml';
+
+function toPosixPath(filePath: string): string {
+  return filePath.split(path.sep).join('/');
+}
+
+function collectFilesRecursively(baseDir: string, relativePrefix = ''): string[] {
+  if (!fs.existsSync(baseDir)) {
+    return [];
+  }
+
+  const entries = fs.readdirSync(baseDir);
+  const files: string[] = [];
+
+  for (const entry of entries) {
+    const absolutePath = path.join(baseDir, entry);
+    const relativePath = relativePrefix ? `${relativePrefix}/${entry}` : entry;
+    const stats = fs.statSync(absolutePath);
+
+    if (stats.isDirectory()) {
+      files.push(...collectFilesRecursively(absolutePath, relativePath));
+    } else if (stats.isFile()) {
+      files.push(relativePath);
+    }
+  }
+
+  return files;
+}
+
+function listManagedFiles(template: 'typescript' | 'react'): string[] {
+  const sourceRoot = path.join(__dirname, '..');
+  const templateRoot = path.join(sourceRoot, 'templates', template);
+  const workflowRoot = path.join(sourceRoot, '.github', 'workflows');
+
+  const templateFiles = collectFilesRecursively(templateRoot);
+  const workflowFiles = collectFilesRecursively(workflowRoot, '.github/workflows')
+    .filter((relativePath) => path.basename(relativePath) !== PUBLISH_WORKFLOW_FILE);
+
+  const managedFiles = [
+    ...templateFiles,
+    ...workflowFiles,
+    ...collectFilesRecursively(path.join(sourceRoot, '.husky'), '.husky'),
+    ...collectFilesRecursively(path.join(sourceRoot, 'scripts'), 'scripts'),
+    '.github/copilot-instructions.md',
+    '.github/PULL_REQUEST_TEMPLATE.md',
+    'eslint.config.js',
+    'src/test.setup.ts',
+    '.gitignore',
+  ];
+
+  return Array.from(new Set(managedFiles.map((filePath) => toPosixPath(filePath))))
+    .sort((left, right) => left.localeCompare(right));
+}
+
+function createFileHash(filePath: string): string {
+  const content = fs.readFileSync(filePath);
+  return createHash(HASH_ALGORITHM).update(content).digest('hex');
+}
+
+function writeScaffoldHashManifest(targetDir: string, template: 'typescript' | 'react'): string {
+  const manifestPath = path.join(targetDir, HASH_MANIFEST_RELATIVE_PATH);
+  const manifestDir = path.dirname(manifestPath);
+
+  if (!fs.existsSync(manifestDir)) {
+    fs.mkdirSync(manifestDir, { recursive: true });
+  }
+
+  const managedFiles = listManagedFiles(template)
+    .filter((relativePath) => relativePath !== HASH_MANIFEST_RELATIVE_PATH)
+    .filter((relativePath) => fs.existsSync(path.join(targetDir, relativePath)));
+
+  const hashes = Object.fromEntries(
+    managedFiles.map((relativePath) => {
+      const absolutePath = path.join(targetDir, relativePath);
+      return [relativePath, createFileHash(absolutePath)];
+    })
+  );
+
+  const manifest = {
+    version: 1,
+    algorithm: HASH_ALGORITHM,
+    generatedAt: new Date().toISOString(),
+    managedFiles,
+    hashes,
+  };
+
+  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf-8');
+  return HASH_MANIFEST_RELATIVE_PATH;
+}
 
 /**
  * Helper to prompt user for input
@@ -294,6 +387,9 @@ export async function init(options: InitOptions = {}): Promise<void> {
 
     // Copy .gitignore from the main project
     copyFile('.gitignore', targetDir, logCreated);
+
+    const hashManifestPath = writeScaffoldHashManifest(targetDir, template);
+    console.log(`Created: ${path.relative(process.cwd(), path.join(targetDir, hashManifestPath))}`);
     
     console.log('\n✅ Project initialized successfully!');
     console.log('\nNext steps:');
@@ -590,6 +686,9 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
     // Copy .gitignore from the main project
     copyFile('.gitignore', targetDir, trackUpdated);
+
+    const hashManifestPath = writeScaffoldHashManifest(targetDir, template);
+    updatedFiles.push(hashManifestPath);
 
     console.log('✅ Updated files:');
     updatedFiles.forEach(file => console.log(`   - ${file}`));

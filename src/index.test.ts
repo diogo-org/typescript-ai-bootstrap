@@ -211,6 +211,21 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       expect(gitignoreContent).toContain('dist');
     });
 
+    it('should create scaffold hash manifest during initialization', async () => {
+      await init({ projectName: 'hash-manifest-init-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const manifestPath = path.join(testDir, '.github', 'typescript-bootstrap-hashes.json');
+      expect(fs.existsSync(manifestPath), 'hash manifest should exist').toBe(true);
+
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      expect(manifest.algorithm).toBe('sha256');
+      expect(Array.isArray(manifest.managedFiles)).toBe(true);
+      expect(manifest.managedFiles.length).toBeGreaterThan(0);
+      expect(manifest.hashes).toBeDefined();
+      expect(typeof manifest.hashes['eslint.config.js']).toBe('string');
+    });
+
     it('should replace placeholders in package.json with correct project name and title', async () => {
       const projectName = 'my-awesome-project';
       const projectTitle = 'My Awesome Project Title';
@@ -995,6 +1010,25 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       const gitignoreContent = fs.readFileSync(gitignorePath, 'utf-8');
       expect(gitignoreContent).toContain('node_modules');
       expect(gitignoreContent).toContain('dist');
+    });
+
+    it('should refresh scaffold hash manifest during update', async () => {
+      await init({ projectName: 'hash-manifest-update-test',
+        targetDir: testDir, skipPrompts: true });
+
+      const manifestPath = path.join(testDir, '.github', 'typescript-bootstrap-hashes.json');
+      const firstManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      expect(firstManifest.hashes['eslint.config.js']).toBeDefined();
+
+      const eslintPath = path.join(testDir, 'eslint.config.js');
+      const originalContent = fs.readFileSync(eslintPath, 'utf-8');
+      fs.writeFileSync(eslintPath, `${originalContent}\n// temporary local change`, 'utf-8');
+
+      await update({ targetDir: testDir, skipPrompts: true });
+
+      const updatedManifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+      expect(updatedManifest.hashes['eslint.config.js']).toBeDefined();
+      expect(updatedManifest.hashes['eslint.config.js']).toBe(firstManifest.hashes['eslint.config.js']);
     });
 
     it('should preserve user\'s custom src/ directory', async () => {

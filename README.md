@@ -112,6 +112,7 @@ The update command will:
 - `npm run test:coverage` - Generate coverage report (requires 80% minimum)
 - `npm run lint` - Check code for linting issues
 - `npm run lint:fix` - Auto-fix linting issues
+- `npm run hash:update` - Recalculate managed scaffold file hashes after intentional config changes
 
 **TypeScript template:**
 - `npm run dev` - Run with tsx watch mode (auto-reloads on changes)
@@ -122,6 +123,7 @@ The update command will:
 - `npm run test:coverage` - Generate coverage report (requires 80% minimum)
 - `npm run lint` - Check code for linting issues
 - `npm run lint:fix` - Auto-fix linting issues
+- `npm run hash:update` - Recalculate managed scaffold file hashes after intentional config changes
 
 ## Project Structure
 
@@ -168,6 +170,13 @@ Every commit is automatically validated with:
 4. **Secrets Detection** - No API keys, tokens, or passwords allowed
 5. **TypeScript** - No type errors allowed
 6. **Build** - Production build must succeed
+7. **Scaffold Integrity** - Managed bootstrap files must match `.github/typescript-bootstrap-hashes.json`
+
+If you intentionally change a managed scaffold file, update the hash manifest before committing:
+
+```bash
+npm run hash:update
+```
 
 ### Test-Driven Development (TDD)
 
