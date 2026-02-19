@@ -23,6 +23,7 @@ The dev server uses `tsx` with watch mode for instant feedback during developmen
 - `npm test` - Run tests
 - `npm run test:coverage` - Run tests with coverage
 - `npm run lint` - Check code quality
+- `npm run hash:update` - Refresh scaffold hash manifest after intentional managed-file changes
 
 ## Project Structure
 

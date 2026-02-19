@@ -16,6 +16,7 @@
     "test:coverage": "vitest --run --coverage",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
+    "hash:update": "node scripts/template-integrity.cjs update",
     "prepare": "node scripts/prepare.cjs",
     "version:patch": "npm version patch --no-git-tag-version",
     "version:minor": "npm version minor --no-git-tag-version",

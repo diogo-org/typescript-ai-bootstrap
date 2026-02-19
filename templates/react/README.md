@@ -16,6 +16,7 @@ npm run dev
 - `npm test` - Run tests
 - `npm run test:coverage` - Run tests with coverage
 - `npm run lint` - Check code quality
+- `npm run hash:update` - Refresh scaffold hash manifest after intentional managed-file changes
 
 ## Project Structure
 
