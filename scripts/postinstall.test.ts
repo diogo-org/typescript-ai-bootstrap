@@ -371,33 +371,25 @@ describe('postinstall.cjs', () => {
       const createOrUpdate = await loadCreateOrUpdate();
       expect(typeof createOrUpdate).toBe('function');
     });
-  });
 
-  describe('Integration with real createOrUpdate', () => {
-    it('runs with default bootstrapProject using real createOrUpdate for update', async () => {
-      const tempDir = createTempProjectDir({
-        name: 'real-loader-test',
-        version: '1.0.0',
-        dependencies: { [PACKAGE_NAME]: '^1.0.0' },
-        typescriptBootstrap: { template: 'typescript' },
-      });
-
-      const mockLog = vi.fn();
-
-      try {
-        const exitCode = await autoInitOnInstall({
-          env: { INIT_CWD: tempDir },
-          log: mockLog,
-          // Don't provide bootstrapProject - use the default
-        });
-
-        expect(exitCode).toBe(0);
-        expect(mockLog).toHaveBeenCalledWith(
-          'Updating TypeScript Bootstrap project automatically...'
-        );
-      } finally {
-        cleanupTempDir(tempDir);
-      }
+    it('calls bootstrapProject with correct args when metadata exists', async () => {
+      await runTest(
+        withPackageJson({
+          name: 'real-loader-test',
+          version: '1.0.0',
+          dependencies: { [PACKAGE_NAME]: '^1.0.0' },
+          typescriptBootstrap: { template: 'typescript' },
+        }),
+        {
+          expectCalled: true,
+          expectedArgs: {
+            projectName: 'real-loader-test',
+            projectTitle: 'real-loader-test',
+            skipPrompts: true,
+            template: 'typescript',
+          },
+        }
+      );
     });
   });
 });
