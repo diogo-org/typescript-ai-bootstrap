@@ -1071,8 +1071,13 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         JSON.stringify(packageJson, null, 2)
       );
 
-      // Update should work and create .github directory
-      await update({ targetDir: testDir, skipPrompts: true });
+      // Update should work and create .github directory after explicit template selection
+      await update({
+        targetDir: testDir,
+        skipPrompts: false,
+        prompt: async () => '2',
+        confirm: async () => true,
+      });
 
       // Verify .github/workflows was created (excluding publish.yml)
       const workflowsDir = path.join(testDir, '.github', 'workflows');
@@ -1630,13 +1635,53 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
       delete packageJson.typescriptBootstrap;
       fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2));
 
-      // Update should add metadata
-      await update({ targetDir: testDir, skipPrompts: true });
+      // Update should ask for template and add metadata accordingly
+      await update({
+        targetDir: testDir,
+        skipPrompts: false,
+        prompt: async () => '2',
+        confirm: async () => true,
+      });
 
       // Verify metadata was added
       const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
       expect(updatedPackageJson.typescriptBootstrap).toBeDefined();
       expect(updatedPackageJson.typescriptBootstrap.template).toBe('react');
+    });
+
+    it('should throw when project metadata is missing and prompts are disabled', async () => {
+      await init({ projectName: 'missing-metadata-no-prompts',
+        targetDir: testDir,
+        template: 'typescript', skipPrompts: true });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      delete packageJson.typescriptBootstrap;
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
+
+      await expect(update({ targetDir: testDir, skipPrompts: true })).rejects.toThrow(/metadata.*missing|template.*required|cannot determine template/i);
+    });
+
+    it('should ask user for template when project metadata is missing', async () => {
+      await init({ projectName: 'missing-metadata-ask-template',
+        targetDir: testDir,
+        template: 'typescript', skipPrompts: true });
+
+      const packageJsonPath = path.join(testDir, 'package.json');
+      const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      delete packageJson.typescriptBootstrap;
+      fs.writeFileSync(packageJsonPath, JSON.stringify(packageJson, null, 2), 'utf-8');
+
+      await update({
+        targetDir: testDir,
+        skipPrompts: false,
+        prompt: async () => '1',
+        confirm: async () => true,
+      });
+
+      const updatedPackageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+      expect(updatedPackageJson.typescriptBootstrap).toBeDefined();
+      expect(updatedPackageJson.typescriptBootstrap.template).toBe('typescript');
     });
 
     it('should update project created without dependencies field', async () => {
@@ -1823,9 +1868,11 @@ describe('TypeScript Bootstrap - Feature Tests', () => {
         version: '1.0.0'
       }, null, 2), 'utf-8');
 
-      // Mock prompt to simulate user saying 'yes'
+      // Mock prompt to simulate user saying 'yes' then choosing react template
+      const promptAnswers = ['y', '2'];
       const mockPrompt = async () => {
-        return 'y';
+        const answer = promptAnswers.shift();
+        return answer ?? '2';
       };
 
       await createOrUpdate({ 
