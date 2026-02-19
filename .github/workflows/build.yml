@@ -24,6 +24,18 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run linter
+        run: npm run lint
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Build
+        run: npm run build
+
       - name: Validate version bumped in PR
         if: github.event_name == 'pull_request'
         run: |
@@ -45,18 +57,6 @@ jobs:
           fi
 
           echo "Version and tag checks passed for PR"
-      
-      - name: Install dependencies
-        run: npm ci
-      
-      - name: Run linter
-        run: npm run lint
-      
-      - name: Run tests
-        run: npm test
-      
-      - name: Build
-        run: npm run build
       
       - name: Configure Git
         if: github.ref == 'refs/heads/main'
