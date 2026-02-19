@@ -58,6 +58,23 @@ TypeScript Bootstrap offers two project templates:
 
 ### Initialize a New Project
 
+### Automatic initialization on install
+
+When this package is installed in a fresh directory (for example after `npm init -y`), it auto-initializes the project during installation. The default template is `typescript`.
+
+```bash
+mkdir my-project
+cd my-project
+npm init -y
+npm install @diogo-org/typescript-bootstrap
+```
+
+Optional environment controls:
+- `TS_BOOTSTRAP_TEMPLATE=react` to choose the React template automatically
+- `TS_BOOTSTRAP_AUTO_INIT=false` to disable auto-initialization
+
+If the directory is not fresh (contains additional files), auto-initialization is skipped for safety.
+
 **React project (default):**
 ```bash
 mkdir my-project

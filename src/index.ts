@@ -249,6 +249,7 @@ interface UpdateOptions {
   targetDir?: string;
   skipPrompts?: boolean; // For AI/programmatic use
   confirm?: (question: string) => Promise<boolean>;
+  prompt?: (question: string) => Promise<string>;
 }
 
 /**
@@ -307,6 +308,31 @@ function copyTemplate(
 }
 
 /**
+ * Prompt user to select a template
+ * @internal
+ */
+async function promptTemplateChoice(
+  promptInput: (question: string) => Promise<string>,
+  message?: string
+): Promise<'typescript' | 'react'> {
+  if (message) {
+    console.log(message);
+  }
+  console.log('   1. typescript');
+  console.log('   2. react\n');
+
+  const choice = await promptInput('Choose a template (1 or 2): ');
+
+  if (choice === '1') {
+    return 'typescript';
+  }
+  if (choice === '2') {
+    return 'react';
+  }
+  throw new Error('Invalid choice. Please select 1 or 2.');
+}
+
+/**
  * Initialize a new TypeScript project with best practices
  */
 export async function init(options: InitOptions = {}): Promise<void> {
@@ -322,15 +348,7 @@ export async function init(options: InitOptions = {}): Promise<void> {
     console.log('  2. react - React + TypeScript project\n');
     
     const promptInput = options.prompt ?? __internal.prompt;
-    const choice = await promptInput('Choose a template (1 or 2): ');
-    
-    if (choice === '1') {
-      template = 'typescript';
-    } else if (choice === '2') {
-      template = 'react';
-    } else {
-      throw new Error('Invalid choice. Please select 1 or 2.');
-    }
+    template = await promptTemplateChoice(promptInput);
   } else if (!template && options.skipPrompts) {
     // Default to react when skipPrompts is true and no template specified
     template = 'react';
@@ -608,7 +626,22 @@ export async function update(options: UpdateOptions = {}): Promise<void> {
 
   const projectName = packageJson.name || path.basename(targetDir);
   const projectTitle = packageJson.description || projectName;
-  const template = packageJson.typescriptBootstrap?.template || 'react'; // Default to react for backwards compatibility
+
+  let template = packageJson.typescriptBootstrap?.template;
+  if (!template) {
+    if (options.skipPrompts) {
+      throw new Error(
+        'TypeScript Bootstrap metadata is missing and template cannot be determined when prompts are disabled. ' +
+        'Re-run without --skip-prompts and choose the template to continue.'
+      );
+    }
+
+    const promptInput = options.prompt ?? __internal.prompt;
+    template = await promptTemplateChoice(
+      promptInput,
+      'ℹ️  This project is missing template metadata. Choose the template to continue:'
+    );
+  }
 
   console.log(`\n🔄 Update available for: ${projectName}\n`);
   console.log('⚠️  This will update your project with the latest template changes:');
@@ -708,4 +741,5 @@ export const __internal = {
   copyFile,
   copyWorkflows,
   prompt,
+  promptTemplateChoice,
 };
