@@ -24,8 +24,41 @@ function printStatus(passed, message) {
 
 console.log('🔍 Running pre-commit checks...\n');
 
-// Step 0: Enforce version bump
-console.log('Step 0: Enforcing version bump...');
+function runTestsWithCoverage(stepLabel) {
+  console.log(`${stepLabel}: Running tests with coverage...`);
+  try {
+    const testOutput = execSync('npx vitest run --coverage', {
+      stdio: 'pipe',
+      encoding: 'utf-8'
+    });
+
+    // Parse coverage percentage
+    const coverageMatch = testOutput.match(/All files\s+\|\s+([\d.]+)/);
+    const coverage = coverageMatch ? parseFloat(coverageMatch[1]) : 0;
+
+    const THRESHOLD = 80;
+    if (coverage < THRESHOLD) {
+      printStatus(false, `Tests passed but coverage too low: ${coverage}% (minimum: ${THRESHOLD}%)`);
+      console.log(testOutput.split('\n').slice(-20).join('\n'));
+      log(colors.red, `\n❌ Commit aborted: Code coverage must be at least ${THRESHOLD}%`);
+      process.exit(1);
+    }
+
+    printStatus(true, `Tests passed with ${coverage}% coverage (>= ${THRESHOLD}%)`);
+  } catch (error) {
+    printStatus(false, 'Tests failed');
+    console.log(error.stdout?.toString().slice(-1000) || '');
+    log(colors.red, '\n❌ Commit aborted: Tests must pass before committing');
+    process.exit(1);
+  }
+  console.log('');
+}
+
+// Step 0: Always run tests first
+runTestsWithCoverage('Step 0');
+
+// Step 1: Enforce version bump
+console.log('Step 1: Enforcing version bump...');
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
   const currentVersion = packageJson.version;
@@ -89,8 +122,8 @@ try {
   process.exit(1);
 }
 
-// Step 1: Verify package-lock.json is in sync
-console.log('Step 1: Verifying package-lock.json...');
+// Step 2: Verify package-lock.json is in sync
+console.log('Step 2: Verifying package-lock.json...');
 try {
   // Check if package-lock.json exists
   if (!fs.existsSync('package-lock.json')) {
@@ -116,8 +149,8 @@ try {
 }
 console.log('');
 
-// Step 2: Run ESLint
-console.log('Step 2: Running ESLint...');
+// Step 3: Run ESLint
+console.log('Step 3: Running ESLint...');
 try {
   execSync('npm run lint', { 
     stdio: 'pipe',
@@ -129,35 +162,6 @@ try {
   console.log(error.stdout?.toString().slice(-2000) || '');
   log(colors.yellow, '\n💡 Run "npm run lint:fix" to auto-fix some issues');
   log(colors.red, '\n❌ Commit aborted: Fix all ESLint errors before committing');
-  process.exit(1);
-}
-console.log('');
-
-// Step 3: Run tests with coverage
-console.log('Step 3: Running tests with coverage...');
-try {
-  const testOutput = execSync('npx vitest run --coverage', { 
-    stdio: 'pipe',
-    encoding: 'utf-8'
-  });
-  
-  // Parse coverage percentage
-  const coverageMatch = testOutput.match(/All files\s+\|\s+([\d.]+)/);
-  const coverage = coverageMatch ? parseFloat(coverageMatch[1]) : 0;
-  
-  const THRESHOLD = 80;
-  if (coverage < THRESHOLD) {
-    printStatus(false, `Tests passed but coverage too low: ${coverage}% (minimum: ${THRESHOLD}%)`);
-    console.log(testOutput.split('\n').slice(-20).join('\n'));
-    log(colors.red, `\n❌ Commit aborted: Code coverage must be at least ${THRESHOLD}%`);
-    process.exit(1);
-  }
-  
-  printStatus(true, `Tests passed with ${coverage}% coverage (>= ${THRESHOLD}%)`);
-} catch (error) {
-  printStatus(false, 'Tests failed');
-  console.log(error.stdout?.toString().slice(-1000) || '');
-  log(colors.red, '\n❌ Commit aborted: Tests must pass before committing');
   process.exit(1);
 }
 console.log('');
