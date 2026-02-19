@@ -24,8 +24,8 @@ function printStatus(passed, message) {
 
 console.log('🔍 Running pre-commit checks...\n');
 
-// Step 0: Check for version downgrades
-console.log('Step 0: Checking for version downgrades...');
+// Step 0: Enforce version bump
+console.log('Step 0: Enforcing version bump...');
 try {
   const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf-8'));
   const currentVersion = packageJson.version;
@@ -57,6 +57,8 @@ try {
       (currMajor === lastMajor && currMinor < lastMinor) ||
       (currMajor === lastMajor && currMinor === lastMinor && currPatch < lastPatch);
     
+    const isSameVersion = currentVersion === lastVersion;
+
     if (isDowngrade) {
       printStatus(false, `Version downgrade detected: ${lastVersion} → ${currentVersion}`);
       log(colors.yellow, '\n💡 Version downgrades are not allowed. Use one of these commands:');
@@ -64,6 +66,16 @@ try {
       log(colors.yellow, '   - npm run version:minor (for new features)');
       log(colors.yellow, '   - npm run version:major (for breaking changes)');
       log(colors.red, '\n❌ Commit aborted: Never downgrade package versions');
+      process.exit(1);
+    }
+
+    if (isSameVersion) {
+      printStatus(false, `Version was not bumped: ${lastVersion} → ${currentVersion}`);
+      log(colors.yellow, '\n💡 Every commit must bump package version. Use one of these commands:');
+      log(colors.yellow, '   - npm run version:patch (for bug fixes)');
+      log(colors.yellow, '   - npm run version:minor (for new features)');
+      log(colors.yellow, '   - npm run version:major (for breaking changes)');
+      log(colors.red, '\n❌ Commit aborted: package.json version must be incremented');
       process.exit(1);
     }
     

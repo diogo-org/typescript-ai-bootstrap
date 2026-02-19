@@ -1,6 +1,6 @@
 {
   "name": "@diogo-org/typescript-bootstrap",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "High-quality TypeScript project scaffolding with best practices for AI-assisted development",
   "type": "module",
   "main": "dist/index.js",
